@@ -102,3 +102,159 @@ The following code uses *st_read()* function of **sf** package to import `C
 cyclingpath = st_read(dsn = "../Hands-on_Ex01/data/geospatial/CyclingPath", 
                          layer = "CyclingPathGazette")
 ```
+
+### **3.3 Importing GIS data in kml format**
+
+The `PreSchoolsLocation` is in kml format. The following code will be used to import the kml into R.
+
+```{r}
+preschool = st_read("../Hands-on_Ex01/data/geospatial/PreSchool/PreSchoolsLocation.kml")
+```
+
+## 4.0 **Checking the Content of A Simple Feature Data Frame**
+
+This section covers the different ways to retrieve information related to the contents of a data frame.
+
+### 4.1 ***st_geometry()***
+
+The column in the sf data.frame that contains the geometries is a list, of class `sfc`. We can retrieve the geometry list-column in this case by mpsz\$geom or mpsz\[\[1\]\], but the more general way uses *st_geometry()* as shown in the following:
+
+```{r}
+st_geometry(mpsz)
+```
+
+### 4.2 **glimpse()**
+
+Beside the basic feature information, we also would like to learn more about the associated attribute information in the data frame. *glimpse()* of **dplyr**.
+
+```{r}
+glimpse(mpsz)
+```
+
+### 4.3 ***head()***
+
+Sometimes we would like to reveal complete information of a feature object, this is the job of [*head()*](https://www.rdocumentation.org/packages/utils/versions/3.6.2/topics/head) of Base R
+
+```{r}
+head(mpsz, n=5)
+```
+
+## 5.0 Plotting Geospatial Data
+
+In geospatial data science, by looking at the feature information is not enough. We are also interested to visualise the geospatial features. This is the time you will find *plot()* of R Graphic comes in very handy as shown in the following:
+
+```{r}
+plot(mpsz)
+```
+
+The default plot of an sf object is a multi-plot of all attributes, up to a reasonable maximum as shown above. We can, however, choose to plot only the geometry by using the following:
+
+```{r}
+plot(st_geometry(mpsz))
+```
+
+Alternatively, we can also choose the plot the sf object by using a specific attribute as shown in the following:
+
+```{r}
+plot(mpsz["PLN_AREA_N"])
+```
+
+## 6.0 **Working with Projection**
+
+Map projection is an important property of a geospatial data. In order to perform geoprocessing using two geospatial data, we need to ensure that both geospatial data are projected using similar coordinate system.
+
+In this section, you will project a simple feature data frame form one coordinate system to another coordinate system. The technical term of this process is called ***projection transformation.***
+
+### 6.1 **Assigning EPSG code to a simple feature data frame**
+
+One of the common issue that can happen during importing geospatial data into R is that the coordinate system of the source data was either missing (such as due to missing .proj for ESRI shapefile) or wrongly assigned during the importing process.
+
+An example the coordinate system of `mpsz` simple feature data frame by using *st_crs()* of *sf* package as shown in the following:
+
+```{r}
+st_crs(mpsz)
+```
+
+Although `mpsz` data frame is projected in svy21 but when we read until the end of the print, it indicates that the EPSG is 9001. This is a wrong EPSG code because the correct EPSG code for svy21 should be [3414](https://epsg.io/3414).
+
+In order to assign the correct EPSG code to `mpsz` data frame, *st_set_crs()* of **sf** package is used as shown in the following:
+
+```{r}
+mpsz3414 <- st_set_crs(mpsz, 3414)
+```
+
+check the CSR again by using the following:
+
+```{r}
+st_crs(mpsz3414)
+```
+
+### 6.2 **Transforming the projection of preschool from wgs84 to svy21**
+
+In geospatial analytics, it is very common for us to transform the original data from geographic coordinate system to projected coordinate system. This is because geographic coordinate system is not appropriate if the analysis need to use distance or/and area measurements.
+
+Let us take preschool simple feature data frame as an example. The print below reveals that it is in wgs84 coordinate system.
+
+```         
+Geometry set for 2290 features  Geometry type: POINT Dimension:     XYZ Bounding box:  xmin: 103.6878 ymin: 1.247759 xmax: 103.9897 ymax: 1.462134 z_range:       zmin: 0 zmax: 0 Geodetic CRS:  WGS 84 First 5 geometries:
+```
+
+In this scenario *st_set_crs()* is not appropriate and *st_transform()* of sf package should be used. This is because we need to reproject `preschool` from one coordinate system to another coordinate system mathemetically.
+
+Perform the projection transformation by using the following:
+
+```{r}
+preschool3414 <- st_transform(preschool, 
+                              crs = 3414)
+```
+
+Next, let us display the content of preschool3414 sf data frame as shown below.
+
+```         
+Geometry set for 2290 features  Geometry type: POINT Dimension:     XYZ Bounding box:  xmin: 11810.03 ymin: 25596.33 xmax: 45404.24 ymax: 49300.88 z_range:       zmin: 0 zmax: 0 Projected CRS: SVY21 / Singapore TM First 5 geometries:
+```
+
+## 7.0 **Importing and Converting An Aspatial Data**
+
+In practice, it is not unusual that we will come across data such as `listing` of Inside Airbnb. We call this kind of data aspatial data. This is because it is not a geospatial data but among the data fields, there are two fields that capture the x- and y-coordinates of the data points.
+
+In this section, you will learn how to import an aspatial data into R environment and save it as a tibble data frame. Next, you will convert it into a simple feature data frame.
+
+## 7.1 **Importing the aspatial data**
+
+Since `listings` data set is in csv file format, we will use [*read_csv()*](https://readr.tidyverse.org/reference/read_delim.html) of **readr** package to import `listing.csv` as shown the code chunk below. The output R object is called `listings` and it is a [tibble data frame](https://r4ds.had.co.nz/tibbles.html).
+
+```{r}
+listings <- read_csv("../Hands-on_Ex01/data/aspatial/listings.csv")
+```
+
+After importing the data file into R, it is important for us to examine if the data file has been imported correctly.
+
+The following shows *list()* of Base R instead of *glimpse()*
+
+```{r}
+list(listings) 
+```
+
+### 7.2 **Creating a simple feature data frame from an aspatial data frame**
+
+The following `listing` data frame into a simple feature data frame by using [*st_as_sf()*](https://r-spatial.github.io/sf/reference/st_as_sf.html) of **sf** packages
+
+```{r}
+listings_sf <- st_as_sf(listings, 
+                       coords = c("longitude", "latitude"),
+                       crs=4326) %>%
+  st_transform(crs = 3414)
+```
+
+Let us examine the content of this newly created simple feature data frame.
+
+```{r}
+glimpse(listings_sf)
+```
+
+## 8.0 **Geoprocessing with sf package**
+
+Besides providing functions to handling (i.e. importing, exporting, assigning projection, transforming projection etc) geospatial data, **sf** package also offers a wide range of geoprocessing (also known as GIS analysis) functions.
+
+In this section, you will learn how to perform two commonly used geoprocessing functions, namely [buffering](https://www.gislounge.com/buffers-in-gis/) and point in polygon count.
