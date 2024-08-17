@@ -2,4 +2,4 @@
 title: "IS415"
 ---
 
-Welcome to **IS415**.
+Hello! I'm Kwee Cheng and this is my journey with IS415
