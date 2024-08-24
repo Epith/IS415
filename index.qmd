@@ -1,5 +1,15 @@
 ---
 title: "IS415"
+listing:
+  id: exercises
+  contents: 
+    - "Hands-on_Ex/*/*.qmd"
+  type: default
 ---
 
 Hello! I'm Kwee Cheng and this is my journey with IS415
+
+## 
+
+::: {#exercises}
+:::
