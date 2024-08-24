@@ -310,7 +310,7 @@ to reverse the color shading add a "-" prefix
 tm_shape(mpsz_pop2020)+
   tm_fill("DEPENDENCY",
           style = "quantile",
-          palette = "-Greens") +
+          palette = "-Blues") +
   tm_borders(alpha = 0.5)
 ```
 
