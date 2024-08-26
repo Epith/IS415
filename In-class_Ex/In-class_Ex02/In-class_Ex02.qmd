@@ -53,11 +53,13 @@ Import Master Plan 2019 Subzone Boundary (Web) KML
 mp_kml_19 = st_read("data/MasterPlan2019SubzoneBoundaryNoSeaKML.kml")
 ```
 
-Import Population csv file
+Import Population CSV file
 
 ```{r}
 popdata <- read_csv("data/respopagesextod2023.csv")
 ```
+
+## 3.0 Data Wrangling
 
 ```{r}
 popdata2023 <- popdata %>%
@@ -68,4 +70,39 @@ popdata2023 <- popdata %>%
               values_from=POP)
 
 colnames(popdata2023)
+```
+
+Data Processing
+
+```{r}
+popdata2023 <- popdata2023 %>%
+  mutate(YOUNG = rowSums(.[3:6])
+         +rowSums(.[14])) %>%
+  mutate(`ECONOMY ACTIVE` = rowSums(.[7:13])+
+  rowSums(.[15]))%>%
+  mutate(`AGED`=rowSums(.[16:21])) %>%
+  mutate(`TOTAL`=rowSums(.[3:21])) %>%  
+  mutate(`DEPENDENCY` = (`YOUNG` + `AGED`)
+  /`ECONOMY ACTIVE`) %>%
+    select(`PA`, `SZ`, `YOUNG`, 
+         `ECONOMY ACTIVE`, `AGED`, 
+         `TOTAL`, `DEPENDENCY`)
+```
+
+Join popdata2023 and mpsz_19
+
+```{r}
+popdata2023 <- popdata2023 %>%
+  mutate_at(.vars = vars(PA, SZ), 
+          .funs = list(toupper))
+```
+
+```{r}
+mpsz_pop2023 <- left_join(mpsz19, popdata2023,
+                          by = c("SUBZONE_N" = "SZ"))
+```
+
+```{r}
+pop2023_mpsz <- left_join(popdata2023, mpsz19,
+                          by = c("SZ" = "SUBZONE_N"))
 ```
