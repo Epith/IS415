@@ -9,7 +9,7 @@ execute:
   freeze: true
 ---
 
-##  **1.0 Overview**
+## **1.0 Overview**
 
 Thematic mapping uses symbols on maps to visualize non-visible geographic properties like population, temperature, or crime rate. Geovisualization, however, graphically represents places, phenomena, or processes, engaging human spatial cognition and the eye-brain vision system for better understanding.
 
@@ -222,7 +222,7 @@ Additional arguments for `tm_borders()`
 
 -   *lty* = border line type. The default is “solid”
 
-## 4.0  **Data classification methods of tmap**
+## 4.0 **Data classification methods of tmap**
 
 Choropleth maps often use data classification methods to group large numbers of observations into meaningful ranges or classes
 

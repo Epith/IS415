@@ -1,0 +1,71 @@
+---
+title: "In class exercise 2"
+author: "Kwee Cheng"
+date: "August 26, 2024"
+date-modified: "last-modified"
+execute: 
+  eval: true
+  echo: true
+  freeze: true
+---
+
+## **1.0 Getting Started**
+
+```{r}
+pacman::p_load(sf, tmap, tidyverse)
+```
+
+## 2.0 Importing the data into R
+
+[Master Plan 2014 Subzone Boundary (Web) (SHP)](https://beta.data.gov.sg/datasets/d_d14da225fccf921049ab64238ff473d9/view)\
+[Master Plan 2014 Subzone Boundary (Web) (KML)](https://beta.data.gov.sg/datasets/d_5cb80a95445f236737f6bc2bfe5f159d/view)
+
+Import Master Plan 2014 Subzone Boundary (Web) Shapefile
+
+```{r}
+mpsz <- st_read(dsn = "data/", 
+                layer = "MP14_SUBZONE_WEB_PL")
+```
+
+Write Master Plan 2014 Subzone Boundary (Web) Shapefile into KML format as the one provided is corrupted
+
+```{r}
+st_write(mpsz,"data/MP14_SUBZONE_WEB_PL.kml", delete_dsn = TRUE)
+```
+
+Import newly created KML file
+
+```{r}
+mp_kml_14 = st_read("data/MP14_SUBZONE_WEB_PL.kml")
+```
+
+Import Master Plan 2019 Subzone Boundary (Web) ShapeFile
+
+```{r}
+mpsz19 <- st_read(dsn = "data/", 
+                layer = "MPSZ-2019") %>%
+  st_transform(crs = 3414)
+```
+
+Import Master Plan 2019 Subzone Boundary (Web) KML
+
+```{r}
+mp_kml_19 = st_read("data/MasterPlan2019SubzoneBoundaryNoSeaKML.kml")
+```
+
+Import Population csv file
+
+```{r}
+popdata <- read_csv("data/respopagesextod2023.csv")
+```
+
+```{r}
+popdata2023 <- popdata %>%
+  group_by(PA, SZ, AG) %>%
+  summarise(`POP` = sum(`Pop`)) %>%
+  ungroup()%>%
+  pivot_wider(names_from=AG, 
+              values_from=POP)
+
+colnames(popdata2023)
+```
