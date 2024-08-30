@@ -1,5 +1,5 @@
 ---
-title: "Hands On Exercise 2: Thematic Mapping and GeoVisualisation with R"
+title: "Hands-On Exercise 2: Thematic Mapping and GeoVisualisation with R"
 author: "Kwee Cheng"
 date: "August 24, 2024"
 date-modified: "last-modified"
