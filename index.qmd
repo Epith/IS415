@@ -6,6 +6,7 @@ listing:
     - "Hands-on_Ex/*/*.qmd"
     - "In-class_Ex/*/*.qmd"
   sort: "date desc"
+  categories: true
   type: default
 ---
 

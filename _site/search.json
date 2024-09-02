@@ -11,7 +11,7 @@
     "href": "index.html#section",
     "title": "IS415",
     "section": "",
-    "text": "Hands-on Exercise 1\n\n\n\n\n\n\n\n\n\n\n\nKwee Cheng\n\n\n\n\n\n\n\n\n\n\n\n\nIn Class Exercise 3\n\n\n\n\n\n\n\n\n\n\n\nSep 2, 2024\n\n\nKwee Cheng\n\n\n\n\n\n\n\n\n\n\n\n\nHands-On Exercise 3: 1st & 2nd Order Spatial Point Patterns Analysis Methods\n\n\n\n\n\n\n\n\n\n\n\nAug 30, 2024\n\n\nKwee Cheng\n\n\n\n\n\n\n\n\n\n\n\n\nIn class exercise 2\n\n\n\n\n\n\n\n\n\n\n\nAug 26, 2024\n\n\nKwee Cheng\n\n\n\n\n\n\n\n\n\n\n\n\nHands-On Exercise 2: Thematic Mapping and GeoVisualisation with R\n\n\n\n\n\n\n\n\n\n\n\nAug 24, 2024\n\n\nKwee Cheng\n\n\n\n\n\n\n\n\n\n\n\n\nIn-class Exercise 1\n\n\n\n\n\n\n\n\n\n\n\nAug 19, 2024\n\n\nKwee Cheng\n\n\n\n\n\n\nNo matching items"
+    "text": "In Class Exercise 3\n\n\n\n\n\n\nIn-Class\n\n\nCode\n\n\n\n\n\n\n\n\n\nSep 2, 2024\n\n\nKwee Cheng\n\n\n\n\n\n\n\n\n\n\n\n\nHands-On Exercise 3: 1st & 2nd Order Spatial Point Patterns Analysis Methods\n\n\n\n\n\n\nHands-On\n\n\nCode\n\n\n\n\n\n\n\n\n\nAug 30, 2024\n\n\nKwee Cheng\n\n\n\n\n\n\n\n\n\n\n\n\nIn class exercise 2\n\n\n\n\n\n\nIn-Class\n\n\nCode\n\n\n\n\n\n\n\n\n\nAug 26, 2024\n\n\nKwee Cheng\n\n\n\n\n\n\n\n\n\n\n\n\nHands-On Exercise 2: Thematic Mapping and GeoVisualisation with R\n\n\n\n\n\n\nHands-On\n\n\nCode\n\n\n\n\n\n\n\n\n\nAug 24, 2024\n\n\nKwee Cheng\n\n\n\n\n\n\n\n\n\n\n\n\nIn-class Exercise 1\n\n\n\n\n\n\nIn-Class\n\n\nCode\n\n\n\n\n\n\n\n\n\nAug 19, 2024\n\n\nKwee Cheng\n\n\n\n\n\n\n\n\n\n\n\n\nHands-on Exercise 1\n\n\n\n\n\n\nHands-On\n\n\nCode\n\n\n\n\n\n\n\n\n\nAug 17, 2024\n\n\nKwee Cheng\n\n\n\n\n\n\nNo matching items"
   },
   {
     "objectID": "In-class_Ex/In-class_Ex02/In-class_Ex02.html",
@@ -40,6 +40,13 @@
     "title": "In class exercise 2",
     "section": "3.0 Data Wrangling",
     "text": "3.0 Data Wrangling\n\npopdata2023 &lt;- popdata %&gt;%\n  group_by(PA, SZ, AG) %&gt;%\n  summarise(`POP` = sum(`Pop`)) %&gt;%\n  ungroup()%&gt;%\n  pivot_wider(names_from=AG, \n              values_from=POP)\n\n`summarise()` has grouped output by 'PA', 'SZ'. You can override using the\n`.groups` argument.\n\ncolnames(popdata2023)\n\n [1] \"PA\"          \"SZ\"          \"0_to_4\"      \"10_to_14\"    \"15_to_19\"   \n [6] \"20_to_24\"    \"25_to_29\"    \"30_to_34\"    \"35_to_39\"    \"40_to_44\"   \n[11] \"45_to_49\"    \"50_to_54\"    \"55_to_59\"    \"5_to_9\"      \"60_to_64\"   \n[16] \"65_to_69\"    \"70_to_74\"    \"75_to_79\"    \"80_to_84\"    \"85_to_89\"   \n[21] \"90_and_Over\"\n\n\nData Processing\n\npopdata2023 &lt;- popdata2023 %&gt;%\n  mutate(YOUNG = rowSums(.[3:6])\n         +rowSums(.[14])) %&gt;%\n  mutate(`ECONOMY ACTIVE` = rowSums(.[7:13])+\n  rowSums(.[15]))%&gt;%\n  mutate(`AGED`=rowSums(.[16:21])) %&gt;%\n  mutate(`TOTAL`=rowSums(.[3:21])) %&gt;%  \n  mutate(`DEPENDENCY` = (`YOUNG` + `AGED`)\n  /`ECONOMY ACTIVE`) %&gt;%\n    select(`PA`, `SZ`, `YOUNG`, \n         `ECONOMY ACTIVE`, `AGED`, \n         `TOTAL`, `DEPENDENCY`)\n\nJoin popdata2023 and mpsz_19\n\npopdata2023 &lt;- popdata2023 %&gt;%\n  mutate_at(.vars = vars(PA, SZ), \n          .funs = list(toupper))\n\n\nmpsz_pop2023 &lt;- left_join(mpsz19, popdata2023,\n                          by = c(\"SUBZONE_N\" = \"SZ\"))\n\n\npop2023_mpsz &lt;- left_join(popdata2023, mpsz19,\n                          by = c(\"SZ\" = \"SUBZONE_N\"))"
+  },
+  {
+    "objectID": "In-class_Ex/In-class_Ex01/In-class_Ex01.html",
+    "href": "In-class_Ex/In-class_Ex01/In-class_Ex01.html",
+    "title": "In-class Exercise 1",
+    "section": "",
+    "text": "Edit: Add Categories"
   },
   {
     "objectID": "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html",
@@ -144,14 +151,14 @@
     "href": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html",
     "title": "Hands-on Exercise 1",
     "section": "",
-    "text": "Geospatial Data Science is a process of importing, wrangling, integrating, and processing geographically referenced data sets. In this hands-on exercise, you will learn how to perform geospatial data science tasks in R by using sf package.\nBy the end of this hands-on exercise, you should acquire the following competencies:\n\ninstalling and loading sf and tidyverse packages into R environment,\nimporting geospatial data by using appropriate functions of sf package,\nimporting aspatial data by using appropriate function of readr package,\nexploring the content of simple feature data frame by using appropriate Base R and sf functions,\nassigning or transforming coordinate systems by using using appropriate sf functions,\nconverting an aspatial data into a sf data frame by using appropriate function of sf package,\nperforming geoprocessing tasks by using appropriate functions of sf package,\nperforming data wrangling tasks by using appropriate functions of dplyr package and\n\nperforming Exploratory Data Analysis (EDA) by using appropriate functions from ggplot2 package."
+    "text": "Edit: Update Metadata"
   },
   {
     "objectID": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html#overview",
     "href": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html#overview",
     "title": "Hands-on Exercise 1",
-    "section": "",
-    "text": "Geospatial Data Science is a process of importing, wrangling, integrating, and processing geographically referenced data sets. In this hands-on exercise, you will learn how to perform geospatial data science tasks in R by using sf package.\nBy the end of this hands-on exercise, you should acquire the following competencies:\n\ninstalling and loading sf and tidyverse packages into R environment,\nimporting geospatial data by using appropriate functions of sf package,\nimporting aspatial data by using appropriate function of readr package,\nexploring the content of simple feature data frame by using appropriate Base R and sf functions,\nassigning or transforming coordinate systems by using using appropriate sf functions,\nconverting an aspatial data into a sf data frame by using appropriate function of sf package,\nperforming geoprocessing tasks by using appropriate functions of sf package,\nperforming data wrangling tasks by using appropriate functions of dplyr package and\n\nperforming Exploratory Data Analysis (EDA) by using appropriate functions from ggplot2 package."
+    "section": "1.0 Overview",
+    "text": "1.0 Overview\nGeospatial Data Science is a process of importing, wrangling, integrating, and processing geographically referenced data sets. In this hands-on exercise, you will learn how to perform geospatial data science tasks in R by using sf package.\nBy the end of this hands-on exercise, you should acquire the following competencies:\n\ninstalling and loading sf and tidyverse packages into R environment,\nimporting geospatial data by using appropriate functions of sf package,\nimporting aspatial data by using appropriate function of readr package,\nexploring the content of simple feature data frame by using appropriate Base R and sf functions,\nassigning or transforming coordinate systems by using using appropriate sf functions,\nconverting an aspatial data into a sf data frame by using appropriate function of sf package,\nperforming geoprocessing tasks by using appropriate functions of sf package,\nperforming data wrangling tasks by using appropriate functions of dplyr package and\n\nperforming Exploratory Data Analysis (EDA) by using appropriate functions from ggplot2 package."
   },
   {
     "objectID": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html#getting-started",

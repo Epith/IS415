@@ -7,7 +7,10 @@ execute:
   eval: true
   echo: true
   freeze: true
+categories: [Hands-On, Code]
 ---
+
+Edit: Add Categories
 
 ## **1.0 Overview**
 
