@@ -4,6 +4,8 @@ listing:
   id: exercises
   contents: 
     - "Hands-on_Ex/*/*.qmd"
+    - "In-class_Ex/*/*.qmd"
+  sort: "date desc"
   type: default
 ---
 
