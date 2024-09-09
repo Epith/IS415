@@ -1,0 +1,148 @@
+---
+title: "In Class Exercise 4"
+author: "Kwee Cheng"
+date: "September 9, 2024"
+date-modified: "last-modified"
+execute: 
+  eval: true
+  echo: true
+  freeze: true
+categories: [In-Class, Code]
+---
+
+load packages
+
+```{r}
+pacman::p_load(sf, raster, spatstat, tmap, tidyverse,sparr)
+```
+
+Import the study area
+
+```{r}
+kbb <- st_read(dsn="data/rawdata/",layer = "Kepulauan_Bangka_Belitung")
+```
+
+revised import code
+
+```{r}
+kbb_sf <- st_read(dsn="data/rawdata/",
+                  layer = "Kepulauan_Bangka_Belitung") %>%
+  st_union() %>%
+  st_zm(drop = TRUE, what = "ZM") %>%
+  st_transform(crs = 32748)
+```
+
+Converting to OWIN
+
+```{r}
+kbb_owin <- as.owin(kbb_sf)
+kbb_owin
+```
+
+check class to confirm output
+
+```{r}
+class(kbb_owin)
+```
+
+Import forest fire data
+
+```{r}
+fire_sf <- read_csv("data/rawdata/forestfires.csv") %>%
+  st_as_sf(coords = c("longitude", "latitude"),
+                        crs = 4326) %>%
+  st_transform(crs = 32748)
+```
+
+convert data type of acq_date to numeric
+
+```{r}
+fire_sf <- fire_sf %>%
+  mutate(DayofYear = yday(acq_date)) %>%
+  mutate(Month_num = month(acq_date)) %>%
+  mutate(Month_fac = month(acq_date, label = TRUE, abbr = FALSE))
+```
+
+Overall Plot
+
+```{r}
+tm_shape(kbb_sf)+
+  tm_polygons() +
+tm_shape(fire_sf) +
+  tm_dots()
+```
+
+visualise by months
+
+```{r}
+tm_shape(kbb_sf)+
+  tm_polygons() +
+tm_shape(fire_sf) +
+  tm_dots(size = 0.1) +
+tm_facets(by="Month_fac",
+            free.coords=FALSE,
+            drop.units = TRUE)
+```
+
+sparr able to incoorperate the control group, able to compare with the control group
+
+Computing STKDE
+
+extracting forest fires by month
+
+```{r}
+fire_month <- fire_sf %>%
+  select(Month_num)
+```
+
+Creating ppp
+
+```{r}
+fire_month_ppp <- as.ppp(fire_month)
+fire_month_ppp
+```
+
+use summary to checkout output is in the correct object class
+
+```{r}
+summary(fire_month_ppp)
+```
+
+check for duplicated
+
+```{r}
+any(duplicated(fire_month_ppp))
+```
+
+create owin object
+
+combine origin_am_ppp and am_owin objects into one
+
+```{r}
+fire_month_owin <- fire_month_ppp[kbb_owin]
+summary(fire_month_owin)
+```
+
+Compute Spatio-temporal KDE
+
+spattemp.density() of sparr package to compute STKDE
+
+```{r}
+st_kde <- spattemp.density(fire_month_owin)
+summary(st_kde)
+```
+
+plotting the spatio-temporal KDE object
+
+```{r}
+#| fig-width: 12
+#| fig-height: 10
+tims <- c(7,8,9,10,11,12)
+  par(mfcol=c(2,3))
+for (i in tims){
+  plot(st_kde, i,
+       override.par=FALSE,
+       fix.range=TRUE,
+       main=paste("KDE at month",i))
+}
+```
