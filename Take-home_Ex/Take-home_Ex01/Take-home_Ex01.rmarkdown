@@ -1,0 +1,876 @@
+---
+title: "Take-Home Exercise 1"
+author: "Kwee Cheng"
+date: "September 14, 2024"
+date-modified: "last-modified"
+execute: 
+  eval: true
+  echo: true
+  freeze: true
+categories: [Take-Home, Code]
+---
+
+
+## Background
+
+Millions of people have their lives shattered by armed conflict – wars – every year.
+
+Armed conflict has been on the rise since about 2012, after a decline in the 1990s and early 2000s. First came conflicts in Libya, Syria and Yemen, triggered by the 2011 Arab uprisings. Libya’s instability spilled south, helping set off a protracted crisis in the Sahel region. A fresh wave of major combat followed: the 2020 Azerbaijani-Armenian war over the Nagorno-Karabakh enclave, horrific fighting in Ethiopia’s northern Tigray region that began weeks later, the conflict prompted by the Myanmar army’s 2021 power grab and Russia’s 2022 assault on Ukraine. Add to those 2023’s devastation in Sudan and Gaza. Around the globe, more people are dying in fighting, being forced from their homes or in need of life-saving aid than in decades.
+
+## Objectives
+
+Geospatial analytics hold tremendous potential to address complex problems facing society. In this study, you are tasked to apply spatial point patterns analysis methods to discover the spatial and spatio-temporal distribution of armed conflict in Myanmar
+
+## Dataset
+
+Armed conflict data of Myanmar between 2021-2024 from [Armed Conflict Location & Event Data (ACLED)](https://acleddata.com/)
+
+[Geospatial data](http://geonode.themimu.info/layers/?limit=100&offset=0) on [Myanmar Information Management Unit, MIMU](http://www.themimu.info/)
+
+[OpenStreetMap](https://download.geofabrik.de/asia/myanmar.html) of Myanmar
+
+## Packages
+
+Most of the packages used are what is taught in class:
+
+-   **sf (Simple Features)**: Provides tools for working with spatial vector data (points, lines, polygons) using simple features, a standardized way to store and process spatial data.
+
+-   **raster**: Handles spatial raster data (grids, images, or maps) and allows reading, writing, manipulating, and analyzing raster datasets.
+
+-   **spatstat**: Focuses on spatial point pattern analysis. It provides tools for analyzing and modeling the spatial distribution of points, like trees or crime locations.
+
+-   **tmap**: A visualization package for thematic maps. It makes creating static and interactive maps using spatial data intuitive, supporting both raster and vector data.
+
+-   **tidyverse**: A collection of packages designed for data manipulation, exploration, and visualization using a consistent syntax (e.g., **ggplot2**, **dplyr**, **tidyr**). It’s not specifically for spatial data but is often used in combination with spatial packages for data wrangling.
+
+-   **sparr**: Used for kernel density estimation and analysis of spatial point patterns, particularly for risk estimation and spatio temporal analysis.
+
+-   **sp**: Provides classes and methods for handling and analyzing spatial data in both vector and raster formats. It's the predecessor to **sf** and **raster**, widely used before **sf** became the preferred package for vector data
+
+
+```{r}
+pacman::p_load(sf, raster, spatstat, tmap, tidyverse,sparr,sp)
+```
+
+
+## Import the Data
+
+### Aspatial Data
+
+First step would be to import the armed conflict data which is in csv format, *st_read* will be used to read the csv file. In addition we are creating an additional column quarter, since we would need to know which quarter does an entry belong to. Luckily for us we can easily use *quarter* function on the event_date to know which quarter it belongs to. This package is found in **lubridate** package which is loaded in together with **tidyverse**. Note we have converted the CRS to Myanmar's CRS at this point.
+
+
+```{r}
+acled_sf <- st_read("data/ACLED_Myanmar.csv") %>%
+  st_as_sf(coords = c(
+    "longitude", "latitude"),
+    crs=4326) %>%
+  st_transform(crs = 32647) %>%
+  mutate(event_date = dmy(event_date),quarter = quarter(event_date))
+```
+
+
+Next I would like to split up the *acled_sf* into chucks for easier management of the data. I will split the data into chunks separating them by the different years 2021, 2022, 2023, 2024.
+
+
+```{r}
+acled_sf_2021 <- acled_sf %>%
+  filter(year == 2021)
+
+acled_sf_2022 <- acled_sf %>%
+  filter(year == 2022)
+
+acled_sf_2023 <- acled_sf %>%
+  filter(year == 2023)
+
+acled_sf_2024 <- acled_sf %>%
+  filter(year == 2024)
+```
+
+
+### Spatial Data
+
+Next is to import the boundary data of Myanmar, likewise *st_read* will be used. Note we have converted the CRS to Myanmars CRS at this point.
+
+
+```{r}
+myanmar_sf <- st_read(dsn="data/",layer = "mmr_polbnda2_adm1_250k_mimu_1") %>%
+  st_transform(crs=32647)
+```
+
+```{r}
+myanmar_sf
+```
+
+
+Looking at the data the only columns that seem interesting to me are *OBJECTID, ST, ST_RG* and *geometry,* so I will be only extracting those columns
+
+
+```{r}
+myanmar_sf <- myanmar_sf %>% select('OBJECTID', 'ST', 'ST_RG', 'geometry')
+summary(myanmar_sf)
+```
+
+
+### **OpenStreetMap**
+
+Next is to import the OpenStreetMap of Myanmar *st_read* is used again
+
+
+```{r}
+osm = st_read("data/myanmar_osm.shp.zip", layer="gis_osm_roads_free_1")
+```
+
+
+## Data Wrangling
+
+### CRS check
+
+First would be to check that *acled_sf* and *myanmar_sf* are in the correct projected system after crs transformation
+
+
+```{r}
+st_crs(acled_sf)
+st_crs(acled_sf_2021)
+st_crs(acled_sf_2022)
+st_crs(acled_sf_2023)
+st_crs(acled_sf_2024)
+st_crs(myanmar_sf)
+```
+
+
+### OpenStreetMap
+
+Working with OpenStreetMap is something different as there were no in class tutorials on this, and in a sense its not really traditional GIS data as its all store in one big database. First step is to see what fields there is.
+
+
+```{r}
+osm
+```
+
+
+The interesting fields to me are osm_id and fclass, in one of the fclass entries it says residential which could be useful in plotting and distinguish where the conflicts take place. Looking into [osm documentation](https://www.geofabrik.de/data/geofabrik-osm-gis-standard-0.3.pdf), osm_id might not be useful for me, but for fclass there are many features some of the examples below. So lets expand on the fclass.![](images/clipboard-1644116504.png)
+
+![](images/clipboard-360332407.png)
+
+![](images/clipboard-2041218185.png)
+
+
+```{r}
+unique(osm$fclass)
+```
+
+
+Due to the overwhelming size of the osm file and after reading the documentation I decided to keep a few of the interesting ones that could be helpful in my analysis
+
+
+```{r}
+roads <- c("primary", "secondary", "residential", "trunk_link", "primary_link", "tertiary", "footway", "trunk", "secondary_link", "tertiary_link")
+
+osm <- osm[osm$fclass %in% roads, ]
+```
+
+```{r}
+osm
+```
+
+
+Let's select only the useful columns that are interest of us, which is fclass, but let's keep osm_id in case it there is a use case for it despite it having duplicates
+
+
+```{r}
+osm <- osm %>% select('osm_id', 'fclass')
+```
+
+
+The number of features have been greatly reduced, also before forgetting let's transform osm CRS to Myanmars like for the previous 2 dataset
+
+
+```{r}
+osm <- st_transform(osm, crs = 32647)
+```
+
+```{r}
+st_crs(osm)
+```
+
+```{r}
+#| eval: false
+merged_myanmar <- st_union(myanmar_sf)
+osm_myanmar <- st_intersection(osm, merged_myanmar)
+```
+
+```{r}
+#| eval: false
+summary(osm_myanmar)
+```
+
+
+There are some geometry in osm that is saved as MULTILINESTRING which could caused problems with KDE calculation, so let's split it into individual LINESTRING
+
+
+```{r}
+#| eval: false
+osm_myanmar <- st_cast(st_cast(osm_myanmar, "MULTILINESTRING"),"LINESTRING")
+summary(osm_myanmar)
+```
+
+
+Let's save this data this data
+
+
+```{r}
+#| eval: false
+write_rds(osm_myanmar, "data/rds/osm_myanmar.rds")
+```
+
+```{r}
+#| echo: false
+osm_myanmar <- read_rds("data/rds/osm_myanmar.rds")
+```
+
+
+### PPP object
+
+Let's prepare to calculating the KDE by converting them into PPP objects
+
+
+```{r}
+acled_2021_Q1_ppp <- acled_sf_2021 %>% filter(quarter == 1) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_2021_Q2_ppp <- acled_sf_2021 %>% filter(quarter == 2) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_2021_Q3_ppp <- acled_sf_2021 %>% filter(quarter == 3) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_2021_Q4_ppp <- acled_sf_2021 %>% filter(quarter == 4) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+
+acled_2022_Q1_ppp <- acled_sf_2022 %>% filter(quarter == 1) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_2022_Q2_ppp <- acled_sf_2022 %>% filter(quarter == 2) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_2022_Q3_ppp <- acled_sf_2022 %>% filter(quarter == 3) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_2022_Q4_ppp <- acled_sf_2022 %>% filter(quarter == 4) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+
+acled_2023_Q1_ppp <- acled_sf_2023 %>% filter(quarter == 1) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_2023_Q2_ppp <- acled_sf_2023 %>% filter(quarter == 2) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_2023_Q3_ppp <- acled_sf_2023 %>% filter(quarter == 3) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_2023_Q4_ppp <- acled_sf_2023 %>% filter(quarter == 4) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+
+acled_2024_Q1_ppp <- acled_sf_2024 %>% filter(quarter == 1) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_2024_Q2_ppp <- acled_sf_2024 %>% filter(quarter == 2) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+```
+
+
+It gives us warnings about duplicated points so let's remove them
+
+
+```{r}
+acled_2021_Q1_ppp <- rjitter(acled_2021_Q1_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_2021_Q2_ppp <- rjitter(acled_2021_Q2_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_2021_Q3_ppp <- rjitter(acled_2021_Q3_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_2021_Q4_ppp <- rjitter(acled_2021_Q4_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_2022_Q1_ppp <- rjitter(acled_2022_Q1_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_2022_Q2_ppp <- rjitter(acled_2022_Q2_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_2022_Q3_ppp <- rjitter(acled_2022_Q3_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_2022_Q4_ppp <- rjitter(acled_2022_Q4_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_2023_Q1_ppp <- rjitter(acled_2023_Q1_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_2023_Q2_ppp <- rjitter(acled_2023_Q2_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_2023_Q3_ppp <- rjitter(acled_2023_Q3_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_2023_Q4_ppp <- rjitter(acled_2023_Q4_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_2024_Q1_ppp <- rjitter(acled_2024_Q1_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_2024_Q2_ppp <- rjitter(acled_2024_Q2_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+```
+
+
+Let's double check again to see if there are any duplicates
+
+
+```{r}
+any(duplicated(acled_2021_Q1_ppp))
+any(duplicated(acled_2021_Q2_ppp))
+any(duplicated(acled_2021_Q3_ppp))
+any(duplicated(acled_2021_Q4_ppp))
+any(duplicated(acled_2022_Q1_ppp))
+any(duplicated(acled_2022_Q2_ppp))
+any(duplicated(acled_2022_Q3_ppp))
+any(duplicated(acled_2022_Q4_ppp))
+any(duplicated(acled_2023_Q1_ppp))
+any(duplicated(acled_2023_Q2_ppp))
+any(duplicated(acled_2023_Q3_ppp))
+any(duplicated(acled_2023_Q4_ppp))
+any(duplicated(acled_2024_Q1_ppp))
+any(duplicated(acled_2024_Q2_ppp))
+```
+
+
+Let's create an OWIN object of Myanmar
+
+
+```{r}
+myanmar_owin <- as.owin(myanmar_sf)
+```
+
+```{r}
+plot(myanmar_owin)
+```
+
+
+Then let's extract the different conflict events into the Myanmar owin object
+
+
+```{r}
+acledMyanmar_ppp_2021_Q1 = acled_2021_Q1_ppp[myanmar_owin]
+acledMyanmar_ppp_2021_Q2 = acled_2021_Q2_ppp[myanmar_owin]
+acledMyanmar_ppp_2021_Q3 = acled_2021_Q3_ppp[myanmar_owin]
+acledMyanmar_ppp_2021_Q4 = acled_2021_Q4_ppp[myanmar_owin]
+acledMyanmar_ppp_2022_Q1 = acled_2022_Q1_ppp[myanmar_owin]
+acledMyanmar_ppp_2022_Q2 = acled_2022_Q2_ppp[myanmar_owin]
+acledMyanmar_ppp_2022_Q3 = acled_2022_Q3_ppp[myanmar_owin]
+acledMyanmar_ppp_2022_Q4 = acled_2022_Q4_ppp[myanmar_owin]
+acledMyanmar_ppp_2023_Q1 = acled_2023_Q1_ppp[myanmar_owin]
+acledMyanmar_ppp_2023_Q2 = acled_2023_Q2_ppp[myanmar_owin]
+acledMyanmar_ppp_2023_Q3 = acled_2023_Q3_ppp[myanmar_owin]
+acledMyanmar_ppp_2023_Q4 = acled_2023_Q4_ppp[myanmar_owin]
+acledMyanmar_ppp_2024_Q1 = acled_2024_Q1_ppp[myanmar_owin]
+acledMyanmar_ppp_2024_Q2 = acled_2024_Q2_ppp[myanmar_owin]
+```
+
+
+Let's simply plot for this year 2024 to see what we have, not much can be seen on where most of the conflicts take place.
+
+
+```{r}
+plot(acledMyanmar_ppp_2024_Q1)
+plot(acledMyanmar_ppp_2024_Q2)
+```
+
+
+## Quarterly KDE
+
+Let's actually calculate the quarterly KDE for the different years now. First we would rescale the PPP into KM
+
+
+```{r}
+acledMyanmar_ppp_2021_Q1.km <- rescale.ppp(acledMyanmar_ppp_2021_Q1, 1000, "km")
+acledMyanmar_ppp_2021_Q2.km <- rescale.ppp(acledMyanmar_ppp_2021_Q2, 1000, "km")
+acledMyanmar_ppp_2021_Q3.km <- rescale.ppp(acledMyanmar_ppp_2021_Q3, 1000, "km")
+acledMyanmar_ppp_2021_Q4.km <- rescale.ppp(acledMyanmar_ppp_2021_Q4, 1000, "km")
+acledMyanmar_ppp_2022_Q1.km <- rescale.ppp(acledMyanmar_ppp_2022_Q1, 1000, "km")
+acledMyanmar_ppp_2022_Q2.km <- rescale.ppp(acledMyanmar_ppp_2022_Q2, 1000, "km")
+acledMyanmar_ppp_2022_Q3.km <- rescale.ppp(acledMyanmar_ppp_2022_Q3, 1000, "km")
+acledMyanmar_ppp_2022_Q4.km <- rescale.ppp(acledMyanmar_ppp_2022_Q4, 1000, "km")
+acledMyanmar_ppp_2023_Q1.km <- rescale.ppp(acledMyanmar_ppp_2023_Q1, 1000, "km")
+acledMyanmar_ppp_2023_Q2.km <- rescale.ppp(acledMyanmar_ppp_2023_Q2, 1000, "km")
+acledMyanmar_ppp_2023_Q3.km <- rescale.ppp(acledMyanmar_ppp_2023_Q3, 1000, "km")
+acledMyanmar_ppp_2023_Q4.km <- rescale.ppp(acledMyanmar_ppp_2023_Q4, 1000, "km")
+acledMyanmar_ppp_2024_Q1.km <- rescale.ppp(acledMyanmar_ppp_2024_Q1, 1000, "km")
+acledMyanmar_ppp_2024_Q2.km <- rescale.ppp(acledMyanmar_ppp_2024_Q2, 1000, "km")
+```
+
+
+Now we can plot the KDE, lets do it for Q1 of 2021
+
+
+```{r}
+conflict.bw <- density(acledMyanmar_ppp_2021_Q1.km, 
+             sigma=bw.diggle, 
+             edge=TRUE, 
+             kernel="gaussian")
+plot(conflict.bw)
+```
+
+
+The map seems a bit dark, so I wanted to try other automatic sigma methods
+
+::: panel-tabset
+### bw.CvL
+
+
+```{r}
+conflict.bw <- density(acledMyanmar_ppp_2021_Q1.km, 
+             sigma=bw.CvL, 
+             edge=TRUE, 
+             kernel="gaussian")
+plot(conflict.bw)
+```
+
+
+### bw.ppl
+
+
+```{r}
+conflict.bw <- density(acledMyanmar_ppp_2021_Q1.km, 
+             sigma=bw.ppl, 
+             edge=TRUE, 
+             kernel="gaussian")
+plot(conflict.bw)
+```
+
+
+### bw.scott
+
+
+```{r}
+conflict.bw <- density(acledMyanmar_ppp_2021_Q1.km, 
+             sigma=bw.scott, 
+             edge=TRUE, 
+             kernel="gaussian")
+plot(conflict.bw)
+```
+
+:::
+
+bw.CvL seems to give better results than bw.scott as with bw.scott the smoothing is too much
+
+let's see the value of bw.CvL
+
+
+```{r}
+bw.CvL(acledMyanmar_ppp_2021_Q1.km)
+```
+
+
+Let's try declaring our own sigma value
+
+::: panel-tabset
+### Sigma value 20
+
+
+```{r}
+conflict.bw <- density(acledMyanmar_ppp_2021_Q1.km, 
+             sigma=20, 
+             edge=TRUE, 
+             kernel="gaussian")
+plot(conflict.bw)
+```
+
+
+### Sigma Value 25
+
+
+```{r}
+conflict.bw <- density(acledMyanmar_ppp_2021_Q1.km, 
+             sigma=25, 
+             edge=TRUE, 
+             kernel="gaussian")
+plot(conflict.bw)
+```
+
+
+### Sigma Value 30
+
+
+```{r}
+conflict.bw <- density(acledMyanmar_ppp_2021_Q1.km, 
+             sigma=30, 
+             edge=TRUE, 
+             kernel="gaussian")
+plot(conflict.bw)
+```
+
+:::
+
+Ultimately I think i will settle for sigma value of 25 and it seems to give the best results without over emphasizing the results.
+
+Let's plot the quarterly KDE for the different years now
+
+::: panel-tabset
+### 2021
+
+
+```{r}
+#| fig-width: 20
+#| fig-height: 18
+par(mfrow=c(2,2), cex.main = 3.5)
+plot(density(acledMyanmar_ppp_2021_Q1.km, 
+             sigma=25, 
+             edge=TRUE, 
+             kernel="gaussian"), 
+     main="2021 Q1")
+plot(density(acledMyanmar_ppp_2021_Q2.km, 
+             sigma=25, 
+             edge=TRUE, 
+             kernel="gaussian"), 
+     main="2021 Q2")
+plot(density(acledMyanmar_ppp_2021_Q3.km, 
+             sigma=25, 
+             edge=TRUE, 
+             kernel="gaussian"), 
+     main="2021 Q3")
+plot(density(acledMyanmar_ppp_2021_Q4.km, 
+             sigma=25, 
+             edge=TRUE, 
+             kernel="gaussian"), 
+     main="2021 Q4")
+```
+
+
+### 2022
+
+
+```{r}
+#| fig-width: 20
+#| fig-height: 18
+par(mfrow=c(2,2), cex.main = 3.5)
+plot(density(acledMyanmar_ppp_2022_Q1.km, 
+             sigma=25, 
+             edge=TRUE, 
+             kernel="gaussian"), 
+     main="2022 Q1")
+plot(density(acledMyanmar_ppp_2022_Q2.km, 
+             sigma=25, 
+             edge=TRUE, 
+             kernel="gaussian"), 
+     main="2022 Q2")
+plot(density(acledMyanmar_ppp_2022_Q3.km, 
+             sigma=25, 
+             edge=TRUE, 
+             kernel="gaussian"), 
+     main="2022 Q3")
+plot(density(acledMyanmar_ppp_2022_Q4.km, 
+             sigma=25, 
+             edge=TRUE, 
+             kernel="gaussian"), 
+     main="2022 Q4")
+```
+
+
+### 2023
+
+
+```{r}
+#| fig-width: 20
+#| fig-height: 18
+par(mfrow=c(2,2), cex.main = 3.5)
+plot(density(acledMyanmar_ppp_2023_Q1.km, 
+             sigma=25, 
+             edge=TRUE, 
+             kernel="gaussian"), 
+     main="2023 Q1")
+plot(density(acledMyanmar_ppp_2023_Q2.km, 
+             sigma=25, 
+             edge=TRUE, 
+             kernel="gaussian"), 
+     main="2023 Q2")
+plot(density(acledMyanmar_ppp_2023_Q3.km, 
+             sigma=25, 
+             edge=TRUE, 
+             kernel="gaussian"), 
+     main="2023 Q3")
+plot(density(acledMyanmar_ppp_2023_Q4.km, 
+             sigma=25, 
+             edge=TRUE, 
+             kernel="gaussian"), 
+     main="2023 Q4")
+```
+
+
+### 2024
+
+
+```{r}
+#| fig-width: 20
+#| fig-height: 18
+par(mfrow=c(1,2), cex.main = 3.5)
+plot(density(acledMyanmar_ppp_2024_Q1.km, 
+             sigma=25, 
+             edge=TRUE, 
+             kernel="gaussian"), 
+     main="2024 Q1")
+plot(density(acledMyanmar_ppp_2024_Q2.km, 
+             sigma=25, 
+             edge=TRUE, 
+             kernel="gaussian"), 
+     main="2024 Q2")
+```
+
+:::
+
+## **Second-order Spatial Point Patterns Analysis**
+
+Extracting study area
+
+
+```{r}
+mandalay <- myanmar_sf %>%
+  filter(ST == "Mandalay")
+```
+
+
+converting sf into owin object
+
+
+```{r}
+mandalay_owin = as.owin(mandalay)
+```
+
+```{r}
+plot(mandalay_owin)
+```
+
+
+Combine conflicts into study area for year 2023 since it was the most recent
+
+
+```{r}
+acled_ppp <- acled_sf %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_2023_ppp <- acled_sf_2023 %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+```
+
+```{r}
+acled_ppp <- rjitter(acled_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_2023_ppp <- rjitter(acled_2023_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+```
+
+```{r}
+any(duplicated(acled_ppp))
+any(duplicated(acled_2023_ppp))
+```
+
+```{r}
+acledMyanmar_ppp_mandalay = acled_ppp[mandalay_owin]
+acledMyanmar_ppp_2023_mandalay = acled_2023_ppp[mandalay_owin]
+```
+
+```{r}
+G_CK = Gest(acledMyanmar_ppp_mandalay, correction = "border")
+G_CK_2023 = Gest(acledMyanmar_ppp_2023_mandalay, correction = "border")
+
+plot(G_CK, xlim=c(0,500))
+plot(G_CK_2023, xlim=c(0,500))
+```
+
+```{r}
+#| eval: false
+G_CK.csr <- envelope(acledMyanmar_ppp_mandalay, Gest, nsim = 999)
+G_CK_2023.csr <- envelope(acledMyanmar_ppp_2023_mandalay, Gest, nsim = 999)
+```
+
+```{r}
+#| eval: false
+write_rds(G_CK.csr, "data/rds/G_CK_csr.rds")
+write_rds(G_CK_2023.csr, "data/rds/G_CK_2023_csr.rds")
+```
+
+```{r}
+#| echo: false
+G_CK.csr <- read_rds("data/rds/G_CK_csr.rds")
+G_CK_2023.csr <- read_rds("data/rds/G_CK_2023_csr.rds")
+```
+
+```{r}
+plot(G_CK.csr)
+plot(G_CK_2023.csr)
+```
+
+
+## **6.8 Computing STKDE by quarters**
+
+
+```{r}
+conflict_quarter_2021 <- acled_sf_2021 %>% 
+  select(quarter)
+
+conflict_quarter_2022 <- acled_sf_2022 %>% 
+  select(quarter)
+
+conflict_quarter_2023 <- acled_sf_2023 %>% 
+  select(quarter)
+
+conflict_quarter_2024 <- acled_sf_2024 %>% 
+  select(quarter)
+```
+
+```{r}
+conflict_quarter_ppp_2021 <- as.ppp(conflict_quarter_2021)
+
+conflict_quarter_ppp_2022 <- as.ppp(conflict_quarter_2022)
+
+conflict_quarter_ppp_2023 <- as.ppp(conflict_quarter_2023)
+
+conflict_quarter_ppp_2024 <- as.ppp(conflict_quarter_2024)
+```
+
+```{r}
+conflict_quarter_ppp_2021 <- rjitter(conflict_quarter_ppp_2021, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+
+conflict_quarter_ppp_2022 <- rjitter(conflict_quarter_ppp_2022, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+
+conflict_quarter_ppp_2023 <- rjitter(conflict_quarter_ppp_2023, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+
+conflict_quarter_ppp_2024 <- rjitter(conflict_quarter_ppp_2024, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+```
+
+```{r}
+any(duplicated(conflict_quarter_ppp_2021))
+any(duplicated(conflict_quarter_ppp_2022))
+any(duplicated(conflict_quarter_ppp_2023))
+any(duplicated(conflict_quarter_ppp_2024))
+```
+
+```{r}
+conflict_quarter_owin_2021 <- conflict_quarter_ppp_2021[myanmar_owin]
+
+conflict_quarter_owin_2022 <- conflict_quarter_ppp_2022[myanmar_owin]
+
+conflict_quarter_owin_2023 <- conflict_quarter_ppp_2023[myanmar_owin]
+
+conflict_quarter_owin_2024 <- conflict_quarter_ppp_2024[myanmar_owin]
+
+#conflict_quarter_owin.km <- rescale.ppp(conflict_quarter_owin, 1000, "km")
+#summary(conflict_quarter_owin)
+```
+
+```{r}
+plot(conflict_quarter_owin_2021)
+plot(conflict_quarter_owin_2022)
+plot(conflict_quarter_owin_2023)
+plot(conflict_quarter_owin_2024)
+```
+
+```{r}
+conflict_kde_2021 <- spattemp.density(conflict_quarter_owin_2021)
+
+conflict_kde_2022 <- spattemp.density(conflict_quarter_owin_2022)
+
+conflict_kde_2023 <- spattemp.density(conflict_quarter_owin_2023)
+
+conflict_kde_2024 <- spattemp.density(conflict_quarter_owin_2024)
+
+summary(conflict_kde_2021)
+summary(conflict_kde_2022)
+summary(conflict_kde_2023)
+summary(conflict_kde_2024)
+```
+
+```{r}
+tims <- c(1,2,3,4)
+tims_2 <- c(1,2)
+
+par(mfcol=c(1,4))
+for(i in tims){
+  plot(conflict_kde_2021, i, 
+       override.par=FALSE, 
+       fix.range=TRUE, 
+       main=paste("STKDE 2021 Q",i))
+}
+
+par(mfcol=c(1,4))
+for(i in tims){
+  plot(conflict_kde_2022, i, 
+       override.par=FALSE, 
+       fix.range=TRUE, 
+       main=paste("STKDE 2022 Q",i))
+}
+
+par(mfcol=c(1,4))
+for(i in tims){
+  plot(conflict_kde_2023, i, 
+       override.par=FALSE, 
+       fix.range=TRUE, 
+       main=paste("STKDE 2023 Q",i))
+}
+
+par(mfcol=c(1,2))
+for(i in tims_2){
+  plot(conflict_kde_2024, i, 
+       override.par=FALSE, 
+       fix.range=TRUE, 
+       main=paste("STKDE 2024 Q",i))
+}
+```
+
+
+## **7.0 2nd Order STKDE by quarters**
+
+
+```{r}
+#conflict_quarter <- acled_sf %>% 
+#  select(quarter)
+#conflict_quarter_ppp <- as.ppp(conflict_quarter)
+```
+
+```{r}
+#conflict_quarter_ppp <- rjitter(conflict_quarter_ppp, 
+#                             retry=TRUE, 
+#                             nsim=1, 
+#                             drop=TRUE)
+```
+
+```{r}
+#any(duplicated(conflict_quarter_ppp))
+```
+
+```{r}
+#acledConflictMyanmar_ppp_mandalay = conflict_quarter_ppp[mandalay_owin]
+```
+
+```{r}
+#G_CK_conflict = Gest(acledConflictMyanmar_ppp_mandalay, correction = "border")
+
+#plot(G_CK_conflict, xlim=c(0,500))
+```
+
+```{r}
+#G_CK_conflict.csr <- envelope(acledConflictMyanmar_ppp_mandalay, Gest, nsim = 999)
+```
+
+```{r}
+#plot(G_CK_conflict.csr)
+```
+
