@@ -47,7 +47,7 @@ Most of the packages used are what is taught in class:
 -   **sp**: Provides classes and methods for handling and analyzing spatial data in both vector and raster formats. It's the predecessor to **sf** and **raster**, widely used before **sf** became the preferred package for vector data
 
 ```{r}
-pacman::p_load(sf, raster, spatstat, tmap, tidyverse,sparr,sp)
+pacman::p_load(sf, raster, spatstat, tmap, tidyverse,sparr,sp, splancs)
 ```
 
 ## Import the Data
@@ -406,14 +406,6 @@ plot(conflict.bw)
 ```
 :::
 
-bw.CvL seems to give better results than bw.scott as with bw.scott the smoothing is too much
-
-let's see the value of bw.CvL
-
-```{r}
-bw.CvL(acledMyanmar_ppp_2021_Q1.km)
-```
-
 Let's try declaring our own sigma value
 
 ::: panel-tabset
@@ -558,14 +550,22 @@ plot(density(acledMyanmar_ppp_2024_Q2.km,
 
 ## **Second-order Spatial Point Patterns Analysis**
 
-Extracting study area
+### Scoped down owin object
+
+Based on the derived KDEs there is a lot of activities in the middle of Myanmar and according to <https://www.citypopulation.de/en/myanmar/cities/>
+
+![](images/clipboard-2705191895.png)
+
+Mandalay is one of the highest population so let's focus on it and it happens to be in our *myanmar_sf* boundary.
+
+Let's filter to only get Madalay out of our *myanmar_sf*
 
 ```{r}
 mandalay <- myanmar_sf %>%
   filter(ST == "Mandalay")
 ```
 
-converting sf into owin object
+Let's create a owin object out of mandalay
 
 ```{r}
 mandalay_owin = as.owin(mandalay)
@@ -575,66 +575,452 @@ mandalay_owin = as.owin(mandalay)
 plot(mandalay_owin)
 ```
 
-Combine conflicts into study area for year 2023 since it was the most recent
+### PPP object
+
+Before converting the *acled_sf* into a ppp object, I would like to split up the data further to focus on four main event types: battles, explosion/remote violence, strategic developments, violence against civilians. Also further splitting it by the different years. Because by not doing this and performing 2nd order analysis we don't know which are the events that are clustered or random dispersed. Also doing it for all the 4 years worth of data its bound to be clustered
 
 ```{r}
-acled_ppp <- acled_sf %>% {as.ppp(st_coordinates(.),st_bbox(.))}
-acled_2023_ppp <- acled_sf_2023 %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_battles_2021 <- acled_sf %>% filter(event_type == "Battles", year == 2021 ) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_battles_2022 <- acled_sf %>% filter(event_type == "Battles", year == 2022 ) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_battles_2023 <- acled_sf %>% filter(event_type == "Battles", year == 2023 ) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_battles_2024 <- acled_sf %>% filter(event_type == "Battles", year == 2024 ) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+
+acled_ppp_explosion_2021 <- acled_sf %>% filter(event_type == "Explosions/Remote violence", year == 2021) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_explosion_2022 <- acled_sf %>% filter(event_type == "Explosions/Remote violence", year == 2022) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_explosion_2023 <- acled_sf %>% filter(event_type == "Explosions/Remote violence", year == 2023) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_explosion_2024 <- acled_sf %>% filter(event_type == "Explosions/Remote violence", year == 2024) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+
+acled_ppp_strat_2021 <- acled_sf %>% filter(event_type == "Strategic developments", year == 2021) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_strat_2022 <- acled_sf %>% filter(event_type == "Strategic developments", year == 2022) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_strat_2023 <- acled_sf %>% filter(event_type == "Strategic developments", year == 2023) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_strat_2024 <- acled_sf %>% filter(event_type == "Strategic developments", year == 2024) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+
+acled_ppp_violence_2021 <- acled_sf %>% filter(event_type == "Violence against civilians", year == 2021) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_violence_2022 <- acled_sf %>% filter(event_type == "Violence against civilians", year == 2022) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_violence_2023 <- acled_sf %>% filter(event_type == "Violence against civilians", year == 2023) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_violence_2024 <- acled_sf %>% filter(event_type == "Violence against civilians", year == 2024) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
 ```
 
+Since it gives us warnings of duplicated data let's remove them
+
 ```{r}
-acled_ppp <- rjitter(acled_ppp, 
+acled_ppp_battles_2021 <- rjitter(acled_ppp_battles_2021, 
                              retry=TRUE, 
                              nsim=1, 
                              drop=TRUE)
-acled_2023_ppp <- rjitter(acled_2023_ppp, 
+acled_ppp_battles_2022 <- rjitter(acled_ppp_battles_2022, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_ppp_battles_2023 <- rjitter(acled_ppp_battles_2023, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_ppp_battles_2024 <- rjitter(acled_ppp_battles_2024, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+
+acled_ppp_explosion_2021 <- rjitter(acled_ppp_explosion_2021, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_ppp_explosion_2022 <- rjitter(acled_ppp_explosion_2022, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_ppp_explosion_2023 <- rjitter(acled_ppp_explosion_2023, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_ppp_explosion_2024 <- rjitter(acled_ppp_explosion_2024, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+
+acled_ppp_strat_2021 <- rjitter(acled_ppp_strat_2021, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_ppp_strat_2022 <- rjitter(acled_ppp_strat_2022, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_ppp_strat_2023 <- rjitter(acled_ppp_strat_2023, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_ppp_strat_2024 <- rjitter(acled_ppp_strat_2024, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+
+acled_ppp_violence_2021 <- rjitter(acled_ppp_violence_2021, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_ppp_violence_2022 <- rjitter(acled_ppp_violence_2022, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_ppp_violence_2023 <- rjitter(acled_ppp_violence_2023, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+acled_ppp_violence_2024 <- rjitter(acled_ppp_violence_2024, 
                              retry=TRUE, 
                              nsim=1, 
                              drop=TRUE)
 ```
 
 ```{r}
-any(duplicated(acled_ppp))
-any(duplicated(acled_2023_ppp))
+any(duplicated(acled_ppp_battles_2021))
+any(duplicated(acled_ppp_battles_2022))
+any(duplicated(acled_ppp_battles_2023))
+any(duplicated(acled_ppp_battles_2024))
+
+any(duplicated(acled_ppp_explosion_2021))
+any(duplicated(acled_ppp_explosion_2022))
+any(duplicated(acled_ppp_explosion_2023))
+any(duplicated(acled_ppp_explosion_2024))
+
+any(duplicated(acled_ppp_strat_2021))
+any(duplicated(acled_ppp_strat_2022))
+any(duplicated(acled_ppp_strat_2023))
+any(duplicated(acled_ppp_strat_2024))
+
+any(duplicated(acled_ppp_violence_2021))
+any(duplicated(acled_ppp_violence_2022))
+any(duplicated(acled_ppp_violence_2023))
+any(duplicated(acled_ppp_violence_2024))
+```
+
+Great there's no more duplicates, next let's combine the ppp object by event types with the mandalay owin that we have created
+
+```{r}
+acledMyanmar_ppp_mandalay_battles_2021 = acled_ppp_battles_2021[mandalay_owin]
+acledMyanmar_ppp_mandalay_battles_2022 = acled_ppp_battles_2022[mandalay_owin]
+acledMyanmar_ppp_mandalay_battles_2023 = acled_ppp_battles_2023[mandalay_owin]
+acledMyanmar_ppp_mandalay_battles_2024 = acled_ppp_battles_2024[mandalay_owin]
+
+
+acledMyanmar_ppp_mandalay_explosion_2021 = acled_ppp_explosion_2021[mandalay_owin]
+acledMyanmar_ppp_mandalay_explosion_2022 = acled_ppp_explosion_2022[mandalay_owin]
+acledMyanmar_ppp_mandalay_explosion_2023 = acled_ppp_explosion_2023[mandalay_owin]
+acledMyanmar_ppp_mandalay_explosion_2024 = acled_ppp_explosion_2024[mandalay_owin]
+
+acledMyanmar_ppp_mandalay_strat_2021 = acled_ppp_strat_2021[mandalay_owin]
+acledMyanmar_ppp_mandalay_strat_2022 = acled_ppp_strat_2022[mandalay_owin]
+acledMyanmar_ppp_mandalay_strat_2023 = acled_ppp_strat_2023[mandalay_owin]
+acledMyanmar_ppp_mandalay_strat_2024 = acled_ppp_strat_2024[mandalay_owin]
+
+acledMyanmar_ppp_mandalay_violence_2021 = acled_ppp_violence_2021[mandalay_owin]
+acledMyanmar_ppp_mandalay_violence_2022 = acled_ppp_violence_2021[mandalay_owin]
+acledMyanmar_ppp_mandalay_violence_2023 = acled_ppp_violence_2021[mandalay_owin]
+acledMyanmar_ppp_mandalay_violence_2024 = acled_ppp_violence_2021[mandalay_owin]
+```
+
+I will be using G function for my 2nd Order Analysis as it could help to determine clustering tendencies.
+
+#### Battles
+
+::: panel-tabset
+### 2021
+
+```{r}
+G_battles_2021 = Gest(acledMyanmar_ppp_mandalay_battles_2021, correction = "border")
+plot(G_battles_2021, xlim=c(0,500))
+```
+
+### 2022
+
+```{r}
+G_battles_2022 = Gest(acledMyanmar_ppp_mandalay_battles_2022, correction = "border")
+plot(G_battles_2022, xlim=c(0,500))
+```
+
+### 2023
+
+```{r}
+G_battles_2023 = Gest(acledMyanmar_ppp_mandalay_battles_2023, correction = "border")
+plot(G_battles_2023, xlim=c(0,500))
+```
+
+### 2024
+
+```{r}
+G_battles_2024 = Gest(acledMyanmar_ppp_mandalay_battles_2024, correction = "border")
+plot(G_battles_2024, xlim=c(0,500))
+```
+:::
+
+#### Explosion/Remote Violence
+
+::: panel-tabset
+### 2021
+
+```{r}
+G_explosion_2021 = Gest(acledMyanmar_ppp_mandalay_explosion_2021, correction = "border")
+plot(G_explosion_2021, xlim=c(0,500))
+```
+
+### 2022
+
+```{r}
+G_explosion_2022 = Gest(acledMyanmar_ppp_mandalay_explosion_2022, correction = "border")
+plot(G_explosion_2022, xlim=c(0,500))
+```
+
+### 2023
+
+```{r}
+G_explosion_2023 = Gest(acledMyanmar_ppp_mandalay_explosion_2023, correction = "border")
+plot(G_explosion_2023, xlim=c(0,500))
+```
+
+### 2024
+
+```{r}
+G_explosion_2024 = Gest(acledMyanmar_ppp_mandalay_explosion_2024, correction = "border")
+plot(G_explosion_2024, xlim=c(0,500))
+```
+:::
+
+#### Strategic Developments
+
+::: panel-tabset
+### 2021
+
+```{r}
+G_strat_2021 = Gest(acledMyanmar_ppp_mandalay_strat_2021, correction = "border")
+plot(G_strat_2021, xlim=c(0,500))
+```
+
+### 2022
+
+```{r}
+G_strat_2022 = Gest(acledMyanmar_ppp_mandalay_strat_2022, correction = "border")
+plot(G_strat_2022, xlim=c(0,500))
+```
+
+### 2023
+
+```{r}
+G_strat_2023 = Gest(acledMyanmar_ppp_mandalay_strat_2023, correction = "border")
+plot(G_strat_2023, xlim=c(0,500))
+```
+
+### 2024
+
+```{r}
+G_strat_2024 = Gest(acledMyanmar_ppp_mandalay_strat_2024, correction = "border")
+plot(G_strat_2024, xlim=c(0,500))
+```
+:::
+
+#### Violence against civilians
+
+::: panel-tabset
+### 2021
+
+```{r}
+G_violence_2021 = Gest(acledMyanmar_ppp_mandalay_violence_2021, correction = "border")
+plot(G_violence_2021, xlim=c(0,500))
+```
+
+### 2022
+
+```{r}
+G_violence_2022 = Gest(acledMyanmar_ppp_mandalay_violence_2022, correction = "border")
+plot(G_violence_2022, xlim=c(0,500))
+```
+
+### 2023
+
+```{r}
+G_violence_2023 = Gest(acledMyanmar_ppp_mandalay_violence_2023, correction = "border")
+plot(G_violence_2023, xlim=c(0,500))
+```
+
+### 2024
+
+```{r}
+G_violence_2024 = Gest(acledMyanmar_ppp_mandalay_violence_2024, correction = "border")
+plot(G_violence_2024, xlim=c(0,500))
+```
+:::
+
+### Performing Complete Spatial Randomness Test
+
+To see if the the different event types are cluster or randomly dispersed. The hypothesis and test are as follows:
+
+Ho = The distribution of a certain event at Mandalay region are randomly distributed.
+
+H1 = The distribution of a certain event at Mandalay region are not randomly distributed.
+
+The null hypothesis will be rejected if p-value is smaller than alpha value of 0.001.
+
+#### Battles
+
+::: panel-tabset
+### 2021
+
+```{r}
+G_battles_2021.csr <- envelope(acledMyanmar_ppp_mandalay_battles_2021, Gest, nsim = 999)
+plot(G_battles_2021.csr)
+```
+
+### 2022
+
+```{r}
+G_battles_2022.csr <- envelope(acledMyanmar_ppp_mandalay_battles_2022, Gest, nsim = 999)
+plot(G_battles_2022.csr)
+```
+
+### 2023
+
+```{r}
+G_battles_2023.csr <- envelope(acledMyanmar_ppp_mandalay_battles_2023, Gest, nsim = 999)
+plot(G_battles_2023.csr)
+```
+
+### 2024
+
+```{r}
+G_battles_2024.csr <- envelope(acledMyanmar_ppp_mandalay_battles_2024, Gest, nsim = 999)
+plot(G_battles_2024.csr)
+```
+:::
+
+For 2021 and 2022, the points are generally clustered however towards the end there are signs to show that there are some homogeneous distribution with it being in the envelope. For the year 2023 and 2024 it is generally clustered as it falls above the envelope however for 2024 there some points of homogeneous distribution due to it falling inside the envelope.
+
+#### Explosion/Remote violence
+
+::: panel-tabset
+### 2021
+
+```{r}
+G_explosion_2021.csr <- envelope(acledMyanmar_ppp_mandalay_explosion_2021, Gest, nsim = 999)
+plot(G_explosion_2021.csr)
+```
+
+### 2022
+
+```{r}
+G_explosion_2022.csr <- envelope(acledMyanmar_ppp_mandalay_explosion_2022, Gest, nsim = 999)
+plot(G_explosion_2022.csr)
+```
+
+### 2023
+
+```{r}
+G_explosion_2023.csr <- envelope(acledMyanmar_ppp_mandalay_explosion_2023, Gest, nsim = 999)
+plot(G_explosion_2023.csr)
+```
+
+### 2024
+
+```{r}
+G_explosion_2024.csr <- envelope(acledMyanmar_ppp_mandalay_explosion_2024, Gest, nsim = 999)
+plot(G_explosion_2024.csr)
+```
+:::
+
+For 2021-2023 it is generally clustered as it fals above the envelope however for 2024 there were some signs of homogeneous distribution where it falls within the envelope however it is still a clustered distribution
+
+#### Strategic Developments
+
+::: panel-tabset
+### 2021
+
+```{r}
+G_strat_2021.csr <- envelope(acledMyanmar_ppp_mandalay_strat_2021, Gest, nsim = 999)
+plot(G_strat_2021.csr)
+```
+
+### 2022
+
+```{r}
+G_strat_2022.csr <- envelope(acledMyanmar_ppp_mandalay_strat_2022, Gest, nsim = 999)
+plot(G_strat_2022.csr)
+```
+
+### 2023
+
+```{r}
+G_strat_2023.csr <- envelope(acledMyanmar_ppp_mandalay_strat_2023, Gest, nsim = 999)
+plot(G_strat_2023.csr)
+```
+
+### 2024
+
+```{r}
+G_strat_2024.csr <- envelope(acledMyanmar_ppp_mandalay_strat_2024, Gest, nsim = 999)
+plot(G_strat_2024.csr)
+```
+:::
+
+For all the years it is generally a clustered distribution due to it being above the envelope
+
+#### Violence against civilians
+
+::: panel-tabset
+### 2021
+
+```{r}
+G_violence_2021.csr <- envelope(acledMyanmar_ppp_mandalay_violence_2021, Gest, nsim = 999)
+plot(G_violence_2021.csr)
+```
+
+### 2022
+
+```{r}
+G_violence_2022.csr <- envelope(acledMyanmar_ppp_mandalay_violence_2022, Gest, nsim = 999)
+plot(G_violence_2022.csr)
+```
+
+### 2023
+
+```{r}
+G_violence_2023.csr <- envelope(acledMyanmar_ppp_mandalay_violence_2023, Gest, nsim = 999)
+plot(G_violence_2023.csr)
+```
+
+### 2024
+
+```{r}
+G_violence_2024.csr <- envelope(acledMyanmar_ppp_mandalay_violence_2024, Gest, nsim = 999)
+plot(G_violence_2024.csr)
+```
+:::
+
+For all the years it is generally a clustered distribution due to it being above the envelope
+
+### KDE on OpenStreetMap
+
+```{r}
+test_density <- density(acledMyanmar_ppp_2021_Q4.km, 
+             sigma=25, 
+             edge=TRUE, 
+             kernel="gaussian")
 ```
 
 ```{r}
-acledMyanmar_ppp_mandalay = acled_ppp[mandalay_owin]
-acledMyanmar_ppp_2023_mandalay = acled_2023_ppp[mandalay_owin]
+density_raster <- raster(test_density)
+projection(density_raster) <- CRS("+init=EPSG:32647")
 ```
 
 ```{r}
-G_CK = Gest(acledMyanmar_ppp_mandalay, correction = "border")
-G_CK_2023 = Gest(acledMyanmar_ppp_2023_mandalay, correction = "border")
-
-plot(G_CK, xlim=c(0,500))
-plot(G_CK_2023, xlim=c(0,500))
+plot(osm_myanmar)
 ```
 
-```{r}
-#| eval: false
-G_CK.csr <- envelope(acledMyanmar_ppp_mandalay, Gest, nsim = 999)
-G_CK_2023.csr <- envelope(acledMyanmar_ppp_2023_mandalay, Gest, nsim = 999)
-```
+## KDE insights
 
-```{r}
-#| eval: false
-write_rds(G_CK.csr, "data/rds/G_CK_csr.rds")
-write_rds(G_CK_2023.csr, "data/rds/G_CK_2023_csr.rds")
-```
+A lot of the conflicts that seems to be happening is around the central area of Myanmar and along the outskirts. Some explanations for activities around the central of Myanmar is that the capital city is there, and one of the biggest region in population Madalay is there. As for the outskirt events it could be due to it being the region with the highest population. Interestingly, for the year 2021 there wasn't much conflicts in the first 2 quarters but it slowly got more. Transitioning into 2022 and 2023 where it seems to be the peak of when a lot of conflicts seems to be happening. With the data given as of now for 2024, the amount of conflicts for the Q2 is lesser than Q1.
 
-```{r}
-#| echo: false
-G_CK.csr <- read_rds("data/rds/G_CK_csr.rds")
-G_CK_2023.csr <- read_rds("data/rds/G_CK_2023_csr.rds")
-```
+## **Computing STKDE by quarters**
 
-```{r}
-plot(G_CK.csr)
-plot(G_CK_2023.csr)
-```
-
-## **6.8 Computing STKDE by quarters**
+For computing STKDE let's split the *acled_sf* data that I have split by the years and selecting the quarter column, as we don't the other other unwanted fields and only the mark field
 
 ```{r}
 conflict_quarter_2021 <- acled_sf_2021 %>% 
@@ -650,6 +1036,10 @@ conflict_quarter_2024 <- acled_sf_2024 %>%
   select(quarter)
 ```
 
+### PPP object
+
+Next is to convert the different simple frames into ppp objects
+
 ```{r}
 conflict_quarter_ppp_2021 <- as.ppp(conflict_quarter_2021)
 
@@ -659,6 +1049,17 @@ conflict_quarter_ppp_2023 <- as.ppp(conflict_quarter_2023)
 
 conflict_quarter_ppp_2024 <- as.ppp(conflict_quarter_2024)
 ```
+
+Let's check for any duplicates in the data
+
+```{r}
+any(duplicated(conflict_quarter_ppp_2021))
+any(duplicated(conflict_quarter_ppp_2022))
+any(duplicated(conflict_quarter_ppp_2023))
+any(duplicated(conflict_quarter_ppp_2024))
+```
+
+Since there are duplicates let's perform jitter to remove them
 
 ```{r}
 conflict_quarter_ppp_2021 <- rjitter(conflict_quarter_ppp_2021, 
@@ -682,12 +1083,16 @@ conflict_quarter_ppp_2024 <- rjitter(conflict_quarter_ppp_2024,
                              drop=TRUE)
 ```
 
+Checking for duplicates again
+
 ```{r}
 any(duplicated(conflict_quarter_ppp_2021))
 any(duplicated(conflict_quarter_ppp_2022))
 any(duplicated(conflict_quarter_ppp_2023))
 any(duplicated(conflict_quarter_ppp_2024))
 ```
+
+Great now that there are no duplicates let's combine the *myanmar_owin* we created earlier from earlier section with the newly created ppp objects
 
 ```{r}
 conflict_quarter_owin_2021 <- conflict_quarter_ppp_2021[myanmar_owin]
@@ -698,9 +1103,9 @@ conflict_quarter_owin_2023 <- conflict_quarter_ppp_2023[myanmar_owin]
 
 conflict_quarter_owin_2024 <- conflict_quarter_ppp_2024[myanmar_owin]
 
-#conflict_quarter_owin.km <- rescale.ppp(conflict_quarter_owin, 1000, "km")
-#summary(conflict_quarter_owin)
 ```
+
+Let's plot it out to see the correctness of the data
 
 ```{r}
 plot(conflict_quarter_owin_2021)
@@ -709,91 +1114,107 @@ plot(conflict_quarter_owin_2023)
 plot(conflict_quarter_owin_2024)
 ```
 
+### STKDE
+
+Now to actually compute the STKDE as from the previous plot everything is looking, we will be using *spattemp.density*
+
+::: panel-tabset
+### 2021
+
 ```{r}
 conflict_kde_2021 <- spattemp.density(conflict_quarter_owin_2021)
-
-conflict_kde_2022 <- spattemp.density(conflict_quarter_owin_2022)
-
-conflict_kde_2023 <- spattemp.density(conflict_quarter_owin_2023)
-
-conflict_kde_2024 <- spattemp.density(conflict_quarter_owin_2024)
-
 summary(conflict_kde_2021)
+```
+
+### 2022
+
+```{r}
+conflict_kde_2022 <- spattemp.density(conflict_quarter_owin_2022)
 summary(conflict_kde_2022)
+```
+
+### 2023
+
+```{r}
+conflict_kde_2023 <- spattemp.density(conflict_quarter_owin_2023)
 summary(conflict_kde_2023)
+```
+
+### 2024
+
+```{r}
+conflict_kde_2024 <- spattemp.density(conflict_quarter_owin_2024)
 summary(conflict_kde_2024)
 ```
+:::
+
+Now let's plot the graphs for the computed STKDE
+
+::: panel-tabset
+### 2021
 
 ```{r}
 tims <- c(1,2,3,4)
-tims_2 <- c(1,2)
 
-par(mfcol=c(1,4))
+par(mfrow=c(1,4), cex.main = 1.5)
 for(i in tims){
   plot(conflict_kde_2021, i, 
-       override.par=FALSE, 
-       fix.range=TRUE, 
-       main=paste("STKDE 2021 Q",i))
+       fix.range=TRUE,
+       override.par=FALSE,
+       main=paste("STKDE Q",i))
 }
+```
 
-par(mfcol=c(1,4))
+### 2022
+
+```{r}
+par(mfrow=c(1,4), cex.main = 1.5)
 for(i in tims){
   plot(conflict_kde_2022, i, 
        override.par=FALSE, 
        fix.range=TRUE, 
-       main=paste("STKDE 2022 Q",i))
+       main=paste("STKDE Q",i))
 }
+```
 
-par(mfcol=c(1,4))
+### 2023
+
+```{r}
+par(mfrow=c(1,4),cex.main = 1.5)
+
 for(i in tims){
   plot(conflict_kde_2023, i, 
        override.par=FALSE, 
        fix.range=TRUE, 
-       main=paste("STKDE 2023 Q",i))
+       main=paste("STKDE Q",i))
 }
+```
 
-par(mfcol=c(1,2))
+### 2024
+
+```{r}
+tims_2 <- c(1,2)
+
+par(mfrow=c(1,2), cex.main = 1.2)
 for(i in tims_2){
   plot(conflict_kde_2024, i, 
        override.par=FALSE, 
-       fix.range=TRUE, 
-       main=paste("STKDE 2024 Q",i))
+       fix.range=TRUE,
+       main=paste("STKDE Q",i))
 }
 ```
+:::
 
-## **7.0 2nd Order STKDE by quarters**
-
-```{r}
-#conflict_quarter <- acled_sf %>% 
-#  select(quarter)
-#conflict_quarter_ppp <- as.ppp(conflict_quarter)
-```
+## **2nd Order STKDE**
 
 ```{r}
-#conflict_quarter_ppp <- rjitter(conflict_quarter_ppp, 
-#                             retry=TRUE, 
-#                             nsim=1, 
-#                             drop=TRUE)
+summary(conflict_quarter_2021)
 ```
 
-```{r}
-#any(duplicated(conflict_quarter_ppp))
-```
+## STKDE Insights
 
-```{r}
-#acledConflictMyanmar_ppp_mandalay = conflict_quarter_ppp[mandalay_owin]
-```
+Intuitively you will think that KDE and STKDE would give the same results cause at the end of the day we are using the same data points. However something STKDE have an advantage is that it takes over a period of time as a consideration.
 
-```{r}
-#G_CK_conflict = Gest(acledConflictMyanmar_ppp_mandalay, correction = "border")
+For the most part STKDE show similar insights in that the conflicts happen in the middle of Myanmar and the outskirts. But something different would be the intensity of the density, as with KDE we changed our own sigma to make it more visible which could explain the difference. Our STKDE has lower intensity for some of the years for example 2023 Q3, which suggest that there is not much conflict clustering as we initially thought. Another one would be 2024 Q2, our KDE suggest that there isn't much conflicts as the intensity of the density is quite low generally around the whole of Myanmar. But our STKDE suggest that for 2024 Q2 there is a lot of conflicts on the central and outskirts of Myanmar, again this could be due to it factoring a period of time into the computation.
 
-#plot(G_CK_conflict, xlim=c(0,500))
-```
-
-```{r}
-#G_CK_conflict.csr <- envelope(acledConflictMyanmar_ppp_mandalay, Gest, nsim = 999)
-```
-
-```{r}
-#plot(G_CK_conflict.csr)
-```
+Overall both KDE and STKDE, shows that there are conflicts around the central of Myanmar and for the outskirts its generally the South of Myanmar. And currently in the year 2024 its correlating to the Rakhine State where the Arakan Army insurgency took place earlier this year and is still ongoing.
