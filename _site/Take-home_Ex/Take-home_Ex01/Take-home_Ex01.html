@@ -245,7 +245,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#ppp-object-2" id="toc-ppp-object-2" class="nav-link" data-scroll-target="#ppp-object-2">PPP object</a></li>
   <li><a href="#stkde" id="toc-stkde" class="nav-link" data-scroll-target="#stkde">STKDE</a></li>
   </ul></li>
-  <li><a href="#nd-order-stkde" id="toc-nd-order-stkde" class="nav-link" data-scroll-target="#nd-order-stkde"><strong>2nd Order STKDE</strong></a></li>
+  <li><a href="#nd-order-analysis-stkde" id="toc-nd-order-analysis-stkde" class="nav-link" data-scroll-target="#nd-order-analysis-stkde"><strong>2nd Order Analysis STKDE</strong></a>
+  <ul class="collapse">
+  <li><a href="#ppp-object-3" id="toc-ppp-object-3" class="nav-link" data-scroll-target="#ppp-object-3">PPP object</a></li>
+  </ul></li>
   <li><a href="#stkde-insights" id="toc-stkde-insights" class="nav-link" data-scroll-target="#stkde-insights">STKDE Insights</a></li>
   </ul>
 </nav>
@@ -322,7 +325,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p><strong>sp</strong>: Provides classes and methods for handling and analyzing spatial data in both vector and raster formats. It’s the predecessor to <strong>sf</strong> and <strong>raster</strong>, widely used before <strong>sf</strong> became the preferred package for vector data</p></li>
 </ul>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(sf, raster, spatstat, tmap, tidyverse,sparr,sp, splancs)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(sf, raster, spatstat, tmap, tidyverse,sparr,sp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="import-the-data" class="level2">
@@ -1463,67 +1466,67 @@ PROJCRS["WGS 84 / UTM zone 47N",
 <h3 class="anchored" data-anchor-id="ppp-object-1">PPP object</h3>
 <p>Before converting the <em>acled_sf</em> into a ppp object, I would like to split up the data further to focus on four main event types: battles, explosion/remote violence, strategic developments, violence against civilians. Also further splitting it by the different years. Because by not doing this and performing 2nd order analysis we don’t know which are the events that are clustered or random dispersed. Also doing it for all the 4 years worth of data its bound to be clustered</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb118"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb118-1"><a href="#cb118-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_battles_2021 <span class="ot">&lt;-</span> acled_sf <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Battles"</span>, year <span class="sc">==</span> <span class="dv">2021</span> ) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb118"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb118-1"><a href="#cb118-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_battles_2021 <span class="ot">&lt;-</span> acled_sf_2021 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Battles"</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: data contain duplicated points</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb120"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb120-1"><a href="#cb120-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_battles_2022 <span class="ot">&lt;-</span> acled_sf <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Battles"</span>, year <span class="sc">==</span> <span class="dv">2022</span> ) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb120"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb120-1"><a href="#cb120-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_battles_2022 <span class="ot">&lt;-</span> acled_sf_2022 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Battles"</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: data contain duplicated points</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb122"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb122-1"><a href="#cb122-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_battles_2023 <span class="ot">&lt;-</span> acled_sf <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Battles"</span>, year <span class="sc">==</span> <span class="dv">2023</span> ) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb122"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb122-1"><a href="#cb122-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_battles_2023 <span class="ot">&lt;-</span> acled_sf_2023 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Battles"</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: data contain duplicated points</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb124"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb124-1"><a href="#cb124-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_battles_2024 <span class="ot">&lt;-</span> acled_sf <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Battles"</span>, year <span class="sc">==</span> <span class="dv">2024</span> ) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb124"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb124-1"><a href="#cb124-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_battles_2024 <span class="ot">&lt;-</span> acled_sf_2024 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Battles"</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: data contain duplicated points</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb126"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb126-1"><a href="#cb126-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_explosion_2021 <span class="ot">&lt;-</span> acled_sf <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Explosions/Remote violence"</span>, year <span class="sc">==</span> <span class="dv">2021</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb126"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb126-1"><a href="#cb126-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_explosion_2021 <span class="ot">&lt;-</span> acled_sf_2021 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Explosions/Remote violence"</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: data contain duplicated points</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb128"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb128-1"><a href="#cb128-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_explosion_2022 <span class="ot">&lt;-</span> acled_sf <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Explosions/Remote violence"</span>, year <span class="sc">==</span> <span class="dv">2022</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb128"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb128-1"><a href="#cb128-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_explosion_2022 <span class="ot">&lt;-</span> acled_sf_2022 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Explosions/Remote violence"</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: data contain duplicated points</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb130"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb130-1"><a href="#cb130-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_explosion_2023 <span class="ot">&lt;-</span> acled_sf <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Explosions/Remote violence"</span>, year <span class="sc">==</span> <span class="dv">2023</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb130"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb130-1"><a href="#cb130-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_explosion_2023 <span class="ot">&lt;-</span> acled_sf_2023 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Explosions/Remote violence"</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: data contain duplicated points</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb132"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb132-1"><a href="#cb132-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_explosion_2024 <span class="ot">&lt;-</span> acled_sf <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Explosions/Remote violence"</span>, year <span class="sc">==</span> <span class="dv">2024</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb132"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb132-1"><a href="#cb132-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_explosion_2024 <span class="ot">&lt;-</span> acled_sf_2024 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Explosions/Remote violence"</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: data contain duplicated points</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb134"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb134-1"><a href="#cb134-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_strat_2021 <span class="ot">&lt;-</span> acled_sf <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Strategic developments"</span>, year <span class="sc">==</span> <span class="dv">2021</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb134"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb134-1"><a href="#cb134-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_strat_2021 <span class="ot">&lt;-</span> acled_sf_2021 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Strategic developments"</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: data contain duplicated points</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb136"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb136-1"><a href="#cb136-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_strat_2022 <span class="ot">&lt;-</span> acled_sf <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Strategic developments"</span>, year <span class="sc">==</span> <span class="dv">2022</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb136"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb136-1"><a href="#cb136-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_strat_2022 <span class="ot">&lt;-</span> acled_sf_2022 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Strategic developments"</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: data contain duplicated points</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb138"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb138-1"><a href="#cb138-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_strat_2023 <span class="ot">&lt;-</span> acled_sf <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Strategic developments"</span>, year <span class="sc">==</span> <span class="dv">2023</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb138"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb138-1"><a href="#cb138-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_strat_2023 <span class="ot">&lt;-</span> acled_sf_2023 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Strategic developments"</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: data contain duplicated points</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb140"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb140-1"><a href="#cb140-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_strat_2024 <span class="ot">&lt;-</span> acled_sf <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Strategic developments"</span>, year <span class="sc">==</span> <span class="dv">2024</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb140"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb140-1"><a href="#cb140-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_strat_2024 <span class="ot">&lt;-</span> acled_sf_2024 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Strategic developments"</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: data contain duplicated points</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb142"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb142-1"><a href="#cb142-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_violence_2021 <span class="ot">&lt;-</span> acled_sf <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Violence against civilians"</span>, year <span class="sc">==</span> <span class="dv">2021</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb142"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb142-1"><a href="#cb142-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_violence_2021 <span class="ot">&lt;-</span> acled_sf_2021 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Violence against civilians"</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: data contain duplicated points</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb144"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb144-1"><a href="#cb144-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_violence_2022 <span class="ot">&lt;-</span> acled_sf <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Violence against civilians"</span>, year <span class="sc">==</span> <span class="dv">2022</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb144"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb144-1"><a href="#cb144-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_violence_2022 <span class="ot">&lt;-</span> acled_sf_2022 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Violence against civilians"</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: data contain duplicated points</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb146"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb146-1"><a href="#cb146-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_violence_2023 <span class="ot">&lt;-</span> acled_sf <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Violence against civilians"</span>, year <span class="sc">==</span> <span class="dv">2023</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb146"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb146-1"><a href="#cb146-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_violence_2023 <span class="ot">&lt;-</span> acled_sf_2023 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Violence against civilians"</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: data contain duplicated points</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb148"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb148-1"><a href="#cb148-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_violence_2024 <span class="ot">&lt;-</span> acled_sf <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Violence against civilians"</span>, year <span class="sc">==</span> <span class="dv">2024</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb148"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb148-1"><a href="#cb148-1" aria-hidden="true" tabindex="-1"></a>acled_ppp_violence_2024 <span class="ot">&lt;-</span> acled_sf_2024 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Violence against civilians"</span>) <span class="sc">%&gt;%</span> {<span class="fu">as.ppp</span>(<span class="fu">st_coordinates</span>(.),<span class="fu">st_bbox</span>(.))}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: data contain duplicated points</code></pre>
 </div>
@@ -2697,11 +2700,11 @@ Conditioning on time...Done.</code></pre>
 <pre><code>Spatiotemporal Kernel Density Estimate
 
 Bandwidths
-  h = 50218.66 (spatial)
+  h = 50191.81 (spatial)
   lambda = 0.0013 (temporal)
 
 No. of observations
-  16197 
+  16195 
 
 Spatial bound
   Type: polygonal
@@ -2712,7 +2715,7 @@ Temporal bound
 
 Evaluation
   128 x 128 x 4 trivariate lattice
-  Density range: [6.077405e-14, 2.134123e-09]</code></pre>
+  Density range: [7.240123e-14, 2.154661e-09]</code></pre>
 </div>
 </div>
 </div>
@@ -2729,11 +2732,11 @@ Conditioning on time...Done.</code></pre>
 <pre><code>Spatiotemporal Kernel Density Estimate
 
 Bandwidths
-  h = 45220.86 (spatial)
+  h = 45172.34 (spatial)
   lambda = 0.0014 (temporal)
 
 No. of observations
-  15897 
+  15900 
 
 Spatial bound
   Type: polygonal
@@ -2744,7 +2747,7 @@ Temporal bound
 
 Evaluation
   128 x 128 x 4 trivariate lattice
-  Density range: [7.945352e-18, 2.238447e-09]</code></pre>
+  Density range: [7.65362e-18, 2.240138e-09]</code></pre>
 </div>
 </div>
 </div>
@@ -2761,11 +2764,11 @@ Conditioning on time...Done.</code></pre>
 <pre><code>Spatiotemporal Kernel Density Estimate
 
 Bandwidths
-  h = 53213.05 (spatial)
+  h = 53201.61 (spatial)
   lambda = 0.0017 (temporal)
 
 No. of observations
-  13172 
+  13187 
 
 Spatial bound
   Type: polygonal
@@ -2776,7 +2779,7 @@ Temporal bound
 
 Evaluation
   128 x 128 x 4 trivariate lattice
-  Density range: [4.813013e-20, 1.528672e-09]</code></pre>
+  Density range: [4.999165e-20, 1.52776e-09]</code></pre>
 </div>
 </div>
 </div>
@@ -2793,11 +2796,11 @@ Conditioning on time...Done.</code></pre>
 <pre><code>Spatiotemporal Kernel Density Estimate
 
 Bandwidths
-  h = 64177.55 (spatial)
+  h = 64230.75 (spatial)
   lambda = 8e-04 (temporal)
 
 No. of observations
-  5989 
+  6002 
 
 Spatial bound
   Type: polygonal
@@ -2808,7 +2811,7 @@ Temporal bound
 
 Evaluation
   128 x 128 x 2 trivariate lattice
-  Density range: [1.011508e-12, 4.60847e-09]</code></pre>
+  Density range: [9.666474e-13, 4.621724e-09]</code></pre>
 </div>
 </div>
 </div>
@@ -2899,20 +2902,256 @@ Evaluation
 </div>
 </section>
 </section>
-<section id="nd-order-stkde" class="level2">
-<h2 class="anchored" data-anchor-id="nd-order-stkde"><strong>2nd Order STKDE</strong></h2>
+<section id="nd-order-analysis-stkde" class="level2">
+<h2 class="anchored" data-anchor-id="nd-order-analysis-stkde"><strong>2nd Order Analysis STKDE</strong></h2>
+<p>There not much tutorial in class for performing 2nd order analysis for STKDE, so the closest that prof has provided us is <a href="https://pages.charlotte.edu/eric-delmelle/wp-content/uploads/sites/150/2019/09/Spatiotemporal-Point-Pattern-Analysis-Using-Ripleys-K-Function.pdf" class="uri">https://pages.charlotte.edu/eric-delmelle/wp-content/uploads/sites/150/2019/09/Spatiotemporal-Point-Pattern-Analysis-Using-Ripleys-K-Function.pdf</a> which is to use Ripleys K function for 2nd order analysis which would be what I’m doing.</p>
+<p>Likewise for what we did in 2nd order analysis for KDE let’s split up the data into the <em>years</em> and <em>event_type</em>. I shall only focus on Mandalay region and for the year 2024. Since from the STKDE it has difference from the KDE. Also as with K function it is already computationally intensive and our dataset is huge, its better to narrow it down.</p>
+<p>Let’s first split acled_<em>sf_2024</em> into the four main <em>event_type</em> again and only selecting the quarter.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb295"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb295-1"><a href="#cb295-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(conflict_quarter_2021)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb295"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb295-1"><a href="#cb295-1" aria-hidden="true" tabindex="-1"></a>acled_stkde_2024_battle <span class="ot">&lt;-</span> acled_sf_2024 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Battles"</span>) <span class="sc">%&gt;%</span> <span class="fu">select</span>(quarter)</span>
+<span id="cb295-2"><a href="#cb295-2" aria-hidden="true" tabindex="-1"></a>acled_stkde_2024_explosion <span class="ot">&lt;-</span> acled_sf_2024 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Explosions/Remote violence"</span>) <span class="sc">%&gt;%</span> <span class="fu">select</span>(quarter)</span>
+<span id="cb295-3"><a href="#cb295-3" aria-hidden="true" tabindex="-1"></a>acled_stkde_2024_strat <span class="ot">&lt;-</span> acled_sf_2024 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Strategic developments"</span>)<span class="sc">%&gt;%</span> <span class="fu">select</span>(quarter)</span>
+<span id="cb295-4"><a href="#cb295-4" aria-hidden="true" tabindex="-1"></a>acled_stkde_2024_violence <span class="ot">&lt;-</span> acled_sf_2024 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(event_type <span class="sc">==</span> <span class="st">"Violence against civilians"</span>) <span class="sc">%&gt;%</span> <span class="fu">select</span>(quarter)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="ppp-object-3" class="level3">
+<h3 class="anchored" data-anchor-id="ppp-object-3">PPP object</h3>
+<p>Let’s convert into ppp object</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb296"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb296-1"><a href="#cb296-1" aria-hidden="true" tabindex="-1"></a>stkde_ppp_battle <span class="ot">&lt;-</span> <span class="fu">as.ppp</span>(acled_stkde_2024_battle)</span>
+<span id="cb296-2"><a href="#cb296-2" aria-hidden="true" tabindex="-1"></a>stkde_ppp_explosion <span class="ot">&lt;-</span> <span class="fu">as.ppp</span>(acled_stkde_2024_explosion)</span>
+<span id="cb296-3"><a href="#cb296-3" aria-hidden="true" tabindex="-1"></a>stkde_ppp_strat <span class="ot">&lt;-</span> <span class="fu">as.ppp</span>(acled_stkde_2024_strat)</span>
+<span id="cb296-4"><a href="#cb296-4" aria-hidden="true" tabindex="-1"></a>stkde_ppp_violence <span class="ot">&lt;-</span> <span class="fu">as.ppp</span>(acled_stkde_2024_violence)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Let’s check for duplicates</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb297"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb297-1"><a href="#cb297-1" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">duplicated</span>(stkde_ppp_battle))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>    quarter               geometry    
- Min.   :1.000   POINT        :16269  
- 1st Qu.:2.000   epsg:32647   :    0  
- Median :2.000   +proj=utm ...:    0  
- Mean   :2.529                        
- 3rd Qu.:4.000                        
- Max.   :4.000                        </code></pre>
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb299"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb299-1"><a href="#cb299-1" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">duplicated</span>(stkde_ppp_explosion))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb301"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb301-1"><a href="#cb301-1" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">duplicated</span>(stkde_ppp_strat))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb303"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb303-1"><a href="#cb303-1" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">duplicated</span>(stkde_ppp_violence))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
 </div>
 </div>
+<p>Let’s remove the duplicates</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb305"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb305-1"><a href="#cb305-1" aria-hidden="true" tabindex="-1"></a>stkde_ppp_battle <span class="ot">&lt;-</span> <span class="fu">rjitter</span>(stkde_ppp_battle, </span>
+<span id="cb305-2"><a href="#cb305-2" aria-hidden="true" tabindex="-1"></a>                             <span class="at">retry=</span><span class="cn">TRUE</span>, </span>
+<span id="cb305-3"><a href="#cb305-3" aria-hidden="true" tabindex="-1"></a>                             <span class="at">nsim=</span><span class="dv">1</span>, </span>
+<span id="cb305-4"><a href="#cb305-4" aria-hidden="true" tabindex="-1"></a>                             <span class="at">drop=</span><span class="cn">TRUE</span>)</span>
+<span id="cb305-5"><a href="#cb305-5" aria-hidden="true" tabindex="-1"></a>stkde_ppp_explosion <span class="ot">&lt;-</span> <span class="fu">rjitter</span>(stkde_ppp_explosion, </span>
+<span id="cb305-6"><a href="#cb305-6" aria-hidden="true" tabindex="-1"></a>                             <span class="at">retry=</span><span class="cn">TRUE</span>, </span>
+<span id="cb305-7"><a href="#cb305-7" aria-hidden="true" tabindex="-1"></a>                             <span class="at">nsim=</span><span class="dv">1</span>, </span>
+<span id="cb305-8"><a href="#cb305-8" aria-hidden="true" tabindex="-1"></a>                             <span class="at">drop=</span><span class="cn">TRUE</span>)</span>
+<span id="cb305-9"><a href="#cb305-9" aria-hidden="true" tabindex="-1"></a>stkde_ppp_strat <span class="ot">&lt;-</span> <span class="fu">rjitter</span>(stkde_ppp_strat, </span>
+<span id="cb305-10"><a href="#cb305-10" aria-hidden="true" tabindex="-1"></a>                             <span class="at">retry=</span><span class="cn">TRUE</span>, </span>
+<span id="cb305-11"><a href="#cb305-11" aria-hidden="true" tabindex="-1"></a>                             <span class="at">nsim=</span><span class="dv">1</span>, </span>
+<span id="cb305-12"><a href="#cb305-12" aria-hidden="true" tabindex="-1"></a>                             <span class="at">drop=</span><span class="cn">TRUE</span>)</span>
+<span id="cb305-13"><a href="#cb305-13" aria-hidden="true" tabindex="-1"></a>stkde_ppp_violence <span class="ot">&lt;-</span> <span class="fu">rjitter</span>(stkde_ppp_violence, </span>
+<span id="cb305-14"><a href="#cb305-14" aria-hidden="true" tabindex="-1"></a>                             <span class="at">retry=</span><span class="cn">TRUE</span>, </span>
+<span id="cb305-15"><a href="#cb305-15" aria-hidden="true" tabindex="-1"></a>                             <span class="at">nsim=</span><span class="dv">1</span>, </span>
+<span id="cb305-16"><a href="#cb305-16" aria-hidden="true" tabindex="-1"></a>                             <span class="at">drop=</span><span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Making sure that there are no more duplicates</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb306"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb306-1"><a href="#cb306-1" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">duplicated</span>(stkde_ppp_battle))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] FALSE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb308"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb308-1"><a href="#cb308-1" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">duplicated</span>(stkde_ppp_explosion))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] FALSE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb310"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb310-1"><a href="#cb310-1" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">duplicated</span>(stkde_ppp_strat))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] FALSE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb312"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb312-1"><a href="#cb312-1" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">duplicated</span>(stkde_ppp_violence))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] FALSE</code></pre>
+</div>
+</div>
+<p>Let’s finally combine it with the mandalay owin object</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb314"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb314-1"><a href="#cb314-1" aria-hidden="true" tabindex="-1"></a>stkde_owin_battle <span class="ot">&lt;-</span> stkde_ppp_battle[mandalay_owin]</span>
+<span id="cb314-2"><a href="#cb314-2" aria-hidden="true" tabindex="-1"></a>stkde_owin_explosion <span class="ot">&lt;-</span> stkde_ppp_explosion[mandalay_owin]</span>
+<span id="cb314-3"><a href="#cb314-3" aria-hidden="true" tabindex="-1"></a>stkde_owin_strat <span class="ot">&lt;-</span> stkde_ppp_strat[mandalay_owin]</span>
+<span id="cb314-4"><a href="#cb314-4" aria-hidden="true" tabindex="-1"></a>stkde_owin_violence <span class="ot">&lt;-</span> stkde_ppp_violence[mandalay_owin]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-14-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-14-1" role="tab" aria-controls="tabset-14-1" aria-selected="true">Battle</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-14-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-14-2" role="tab" aria-controls="tabset-14-2" aria-selected="false">Explosion/Remote violence</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-14-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-14-3" role="tab" aria-controls="tabset-14-3" aria-selected="false">Strategic Development</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-14-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-14-4" role="tab" aria-controls="tabset-14-4" aria-selected="false">Violence against civilians</a></li></ul>
+<div class="tab-content">
+<div id="tabset-14-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-14-1-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb315"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb315-1"><a href="#cb315-1" aria-hidden="true" tabindex="-1"></a>K_battle <span class="ot">=</span> <span class="fu">Kest</span>(stkde_owin_battle, <span class="at">correction =</span> <span class="st">"Ripley"</span>)</span>
+<span id="cb315-2"><a href="#cb315-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(K_battle, . <span class="sc">-</span>r <span class="sc">~</span> r, <span class="at">ylab=</span> <span class="st">"K(d)-r"</span>, <span class="at">xlab =</span> <span class="st">"d(m)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-103-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<div id="tabset-14-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-14-2-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb316"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb316-1"><a href="#cb316-1" aria-hidden="true" tabindex="-1"></a>K_explosion <span class="ot">=</span> <span class="fu">Kest</span>(stkde_owin_explosion, <span class="at">correction =</span> <span class="st">"Ripley"</span>)</span>
+<span id="cb316-2"><a href="#cb316-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(K_explosion, . <span class="sc">-</span>r <span class="sc">~</span> r, <span class="at">ylab=</span> <span class="st">"K(d)-r"</span>, <span class="at">xlab =</span> <span class="st">"d(m)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-104-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<div id="tabset-14-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-14-3-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb317"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb317-1"><a href="#cb317-1" aria-hidden="true" tabindex="-1"></a>K_Strat <span class="ot">=</span> <span class="fu">Kest</span>(stkde_owin_strat, <span class="at">correction =</span> <span class="st">"Ripley"</span>)</span>
+<span id="cb317-2"><a href="#cb317-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(K_Strat, . <span class="sc">-</span>r <span class="sc">~</span> r, <span class="at">ylab=</span> <span class="st">"K(d)-r"</span>, <span class="at">xlab =</span> <span class="st">"d(m)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-105-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<div id="tabset-14-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-14-4-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb318"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb318-1"><a href="#cb318-1" aria-hidden="true" tabindex="-1"></a>K_violence <span class="ot">=</span> <span class="fu">Kest</span>(stkde_owin_violence, <span class="at">correction =</span> <span class="st">"Ripley"</span>)</span>
+<span id="cb318-2"><a href="#cb318-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(K_violence, . <span class="sc">-</span>r <span class="sc">~</span> r, <span class="at">ylab=</span> <span class="st">"K(d)-r"</span>, <span class="at">xlab =</span> <span class="st">"d(m)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-106-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<p>Then let’s run the CSR simulation and plot it. If its</p>
+<ul>
+<li><p>Above the envelop: significant cluster pattern</p></li>
+<li><p>Below the envelop: significant regular</p></li>
+<li><p>Inside the envelop: CSR</p></li>
+</ul>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-15-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-15-1" role="tab" aria-controls="tabset-15-1" aria-selected="true">Battles</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-15-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-15-2" role="tab" aria-controls="tabset-15-2" aria-selected="false">Explosion/Remote violence</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-15-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-15-3" role="tab" aria-controls="tabset-15-3" aria-selected="false">Strategic Development</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-15-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-15-4" role="tab" aria-controls="tabset-15-4" aria-selected="false">Violence against civilians</a></li></ul>
+<div class="tab-content">
+<div id="tabset-15-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-15-1-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb319"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb319-1"><a href="#cb319-1" aria-hidden="true" tabindex="-1"></a>K_battle.csr <span class="ot">&lt;-</span> <span class="fu">envelope</span>(stkde_owin_battle, Kest, <span class="at">nsim =</span> <span class="dv">99</span>, <span class="at">rank =</span> <span class="dv">1</span>, <span class="at">glocal=</span><span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Generating 99 simulations of CSR  ...
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 
+99.
+
+Done.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb321"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb321-1"><a href="#cb321-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(K_battle.csr, . <span class="sc">-</span> r <span class="sc">~</span> r, <span class="at">xlab=</span><span class="st">"d"</span>, <span class="at">ylab=</span><span class="st">"K(d)-r"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-107-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<div id="tabset-15-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-15-2-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb322"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb322-1"><a href="#cb322-1" aria-hidden="true" tabindex="-1"></a>K_explosion.csr <span class="ot">&lt;-</span> <span class="fu">envelope</span>(stkde_owin_explosion, Kest, <span class="at">nsim =</span> <span class="dv">99</span>, <span class="at">rank =</span> <span class="dv">1</span>, <span class="at">glocal=</span><span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Generating 99 simulations of CSR  ...
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 
+99.
+
+Done.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb324"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb324-1"><a href="#cb324-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(K_explosion.csr, . <span class="sc">-</span> r <span class="sc">~</span> r, <span class="at">xlab=</span><span class="st">"d"</span>, <span class="at">ylab=</span><span class="st">"K(d)-r"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-108-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<div id="tabset-15-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-15-3-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb325"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb325-1"><a href="#cb325-1" aria-hidden="true" tabindex="-1"></a>K_Strat.csr <span class="ot">&lt;-</span> <span class="fu">envelope</span>(stkde_owin_strat, Kest, <span class="at">nsim =</span> <span class="dv">99</span>, <span class="at">rank =</span> <span class="dv">1</span>, <span class="at">glocal=</span><span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Generating 99 simulations of CSR  ...
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 
+99.
+
+Done.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb327"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb327-1"><a href="#cb327-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(K_Strat.csr, . <span class="sc">-</span> r <span class="sc">~</span> r, <span class="at">xlab=</span><span class="st">"d"</span>, <span class="at">ylab=</span><span class="st">"K(d)-r"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-109-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<div id="tabset-15-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-15-4-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb328"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb328-1"><a href="#cb328-1" aria-hidden="true" tabindex="-1"></a>K_violence.csr <span class="ot">&lt;-</span> <span class="fu">envelope</span>(stkde_owin_violence, Kest, <span class="at">nsim =</span> <span class="dv">99</span>, <span class="at">rank =</span> <span class="dv">1</span>, <span class="at">glocal=</span><span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Generating 99 simulations of CSR  ...
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 
+99.
+
+Done.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb330"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb330-1"><a href="#cb330-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(K_violence.csr, . <span class="sc">-</span> r <span class="sc">~</span> r, <span class="at">xlab=</span><span class="st">"d"</span>, <span class="at">ylab=</span><span class="st">"K(d)-r"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-110-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<p>Likewise it does show that the conflicts in 2024 are all generally clustered as it is above the envelope</p>
+</section>
 </section>
 <section id="stkde-insights" class="level2">
 <h2 class="anchored" data-anchor-id="stkde-insights">STKDE Insights</h2>

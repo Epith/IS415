@@ -47,7 +47,7 @@ Most of the packages used are what is taught in class:
 -   **sp**: Provides classes and methods for handling and analyzing spatial data in both vector and raster formats. It's the predecessor to **sf** and **raster**, widely used before **sf** became the preferred package for vector data
 
 ```{r}
-pacman::p_load(sf, raster, spatstat, tmap, tidyverse,sparr,sp, splancs)
+pacman::p_load(sf, raster, spatstat, tmap, tidyverse,sparr,sp)
 ```
 
 ## Import the Data
@@ -580,25 +580,25 @@ plot(mandalay_owin)
 Before converting the *acled_sf* into a ppp object, I would like to split up the data further to focus on four main event types: battles, explosion/remote violence, strategic developments, violence against civilians. Also further splitting it by the different years. Because by not doing this and performing 2nd order analysis we don't know which are the events that are clustered or random dispersed. Also doing it for all the 4 years worth of data its bound to be clustered
 
 ```{r}
-acled_ppp_battles_2021 <- acled_sf %>% filter(event_type == "Battles", year == 2021 ) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
-acled_ppp_battles_2022 <- acled_sf %>% filter(event_type == "Battles", year == 2022 ) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
-acled_ppp_battles_2023 <- acled_sf %>% filter(event_type == "Battles", year == 2023 ) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
-acled_ppp_battles_2024 <- acled_sf %>% filter(event_type == "Battles", year == 2024 ) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_battles_2021 <- acled_sf_2021 %>% filter(event_type == "Battles") %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_battles_2022 <- acled_sf_2022 %>% filter(event_type == "Battles") %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_battles_2023 <- acled_sf_2023 %>% filter(event_type == "Battles") %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_battles_2024 <- acled_sf_2024 %>% filter(event_type == "Battles") %>% {as.ppp(st_coordinates(.),st_bbox(.))}
 
-acled_ppp_explosion_2021 <- acled_sf %>% filter(event_type == "Explosions/Remote violence", year == 2021) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
-acled_ppp_explosion_2022 <- acled_sf %>% filter(event_type == "Explosions/Remote violence", year == 2022) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
-acled_ppp_explosion_2023 <- acled_sf %>% filter(event_type == "Explosions/Remote violence", year == 2023) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
-acled_ppp_explosion_2024 <- acled_sf %>% filter(event_type == "Explosions/Remote violence", year == 2024) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_explosion_2021 <- acled_sf_2021 %>% filter(event_type == "Explosions/Remote violence") %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_explosion_2022 <- acled_sf_2022 %>% filter(event_type == "Explosions/Remote violence") %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_explosion_2023 <- acled_sf_2023 %>% filter(event_type == "Explosions/Remote violence") %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_explosion_2024 <- acled_sf_2024 %>% filter(event_type == "Explosions/Remote violence") %>% {as.ppp(st_coordinates(.),st_bbox(.))}
 
-acled_ppp_strat_2021 <- acled_sf %>% filter(event_type == "Strategic developments", year == 2021) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
-acled_ppp_strat_2022 <- acled_sf %>% filter(event_type == "Strategic developments", year == 2022) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
-acled_ppp_strat_2023 <- acled_sf %>% filter(event_type == "Strategic developments", year == 2023) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
-acled_ppp_strat_2024 <- acled_sf %>% filter(event_type == "Strategic developments", year == 2024) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_strat_2021 <- acled_sf_2021 %>% filter(event_type == "Strategic developments") %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_strat_2022 <- acled_sf_2022 %>% filter(event_type == "Strategic developments") %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_strat_2023 <- acled_sf_2023 %>% filter(event_type == "Strategic developments") %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_strat_2024 <- acled_sf_2024 %>% filter(event_type == "Strategic developments") %>% {as.ppp(st_coordinates(.),st_bbox(.))}
 
-acled_ppp_violence_2021 <- acled_sf %>% filter(event_type == "Violence against civilians", year == 2021) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
-acled_ppp_violence_2022 <- acled_sf %>% filter(event_type == "Violence against civilians", year == 2022) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
-acled_ppp_violence_2023 <- acled_sf %>% filter(event_type == "Violence against civilians", year == 2023) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
-acled_ppp_violence_2024 <- acled_sf %>% filter(event_type == "Violence against civilians", year == 2024) %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_violence_2021 <- acled_sf_2021 %>% filter(event_type == "Violence against civilians") %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_violence_2022 <- acled_sf_2022 %>% filter(event_type == "Violence against civilians") %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_violence_2023 <- acled_sf_2023 %>% filter(event_type == "Violence against civilians") %>% {as.ppp(st_coordinates(.),st_bbox(.))}
+acled_ppp_violence_2024 <- acled_sf_2024 %>% filter(event_type == "Violence against civilians") %>% {as.ppp(st_coordinates(.),st_bbox(.))}
 ```
 
 Since it gives us warnings of duplicated data let's remove them
@@ -1205,11 +1205,149 @@ for(i in tims_2){
 ```
 :::
 
-## **2nd Order STKDE**
+## **2nd Order Analysis STKDE**
+
+There not much tutorial in class for performing 2nd order analysis for STKDE, so the closest that prof has provided us is <https://pages.charlotte.edu/eric-delmelle/wp-content/uploads/sites/150/2019/09/Spatiotemporal-Point-Pattern-Analysis-Using-Ripleys-K-Function.pdf> which is to use Ripleys K function for 2nd order analysis which would be what I'm doing.
+
+Likewise for what we did in 2nd order analysis for KDE let's split up the data into the *years* and *event_type*. I shall only focus on Mandalay region and for the year 2024. Since from the STKDE it has difference from the KDE. Also as with K function it is already computationally intensive and our dataset is huge, its better to narrow it down.
+
+Let's first split acled\_*sf_2024* into the four main *event_type* again and only selecting the quarter.
 
 ```{r}
-summary(conflict_quarter_2021)
+acled_stkde_2024_battle <- acled_sf_2024 %>% filter(event_type == "Battles") %>% select(quarter)
+acled_stkde_2024_explosion <- acled_sf_2024 %>% filter(event_type == "Explosions/Remote violence") %>% select(quarter)
+acled_stkde_2024_strat <- acled_sf_2024 %>% filter(event_type == "Strategic developments")%>% select(quarter)
+acled_stkde_2024_violence <- acled_sf_2024 %>% filter(event_type == "Violence against civilians") %>% select(quarter)
 ```
+
+### PPP object
+
+Let's convert into ppp object
+
+```{r}
+stkde_ppp_battle <- as.ppp(acled_stkde_2024_battle)
+stkde_ppp_explosion <- as.ppp(acled_stkde_2024_explosion)
+stkde_ppp_strat <- as.ppp(acled_stkde_2024_strat)
+stkde_ppp_violence <- as.ppp(acled_stkde_2024_violence)
+```
+
+Let's check for duplicates
+
+```{r}
+any(duplicated(stkde_ppp_battle))
+any(duplicated(stkde_ppp_explosion))
+any(duplicated(stkde_ppp_strat))
+any(duplicated(stkde_ppp_violence))
+```
+
+Let's remove the duplicates
+
+```{r}
+stkde_ppp_battle <- rjitter(stkde_ppp_battle, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+stkde_ppp_explosion <- rjitter(stkde_ppp_explosion, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+stkde_ppp_strat <- rjitter(stkde_ppp_strat, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+stkde_ppp_violence <- rjitter(stkde_ppp_violence, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+```
+
+Making sure that there are no more duplicates
+
+```{r}
+any(duplicated(stkde_ppp_battle))
+any(duplicated(stkde_ppp_explosion))
+any(duplicated(stkde_ppp_strat))
+any(duplicated(stkde_ppp_violence))
+```
+
+Let's finally combine it with the mandalay owin object
+
+```{r}
+stkde_owin_battle <- stkde_ppp_battle[mandalay_owin]
+stkde_owin_explosion <- stkde_ppp_explosion[mandalay_owin]
+stkde_owin_strat <- stkde_ppp_strat[mandalay_owin]
+stkde_owin_violence <- stkde_ppp_violence[mandalay_owin]
+```
+
+::: panel-tabset
+### Battle
+
+```{r}
+K_battle = Kest(stkde_owin_battle, correction = "Ripley")
+plot(K_battle, . -r ~ r, ylab= "K(d)-r", xlab = "d(m)")
+```
+
+### Explosion/Remote violence
+
+```{r}
+K_explosion = Kest(stkde_owin_explosion, correction = "Ripley")
+plot(K_explosion, . -r ~ r, ylab= "K(d)-r", xlab = "d(m)")
+```
+
+### Strategic Development
+
+```{r}
+K_Strat = Kest(stkde_owin_strat, correction = "Ripley")
+plot(K_Strat, . -r ~ r, ylab= "K(d)-r", xlab = "d(m)")
+```
+
+### Violence against civilians
+
+```{r}
+K_violence = Kest(stkde_owin_violence, correction = "Ripley")
+plot(K_violence, . -r ~ r, ylab= "K(d)-r", xlab = "d(m)")
+```
+:::
+
+Then let's run the CSR simulation and plot it. If its
+
+-   Above the envelop: significant cluster pattern
+
+-   Below the envelop: significant regular
+
+-   Inside the envelop: CSR
+
+::: panel-tabset
+### Battles
+
+```{r}
+K_battle.csr <- envelope(stkde_owin_battle, Kest, nsim = 99, rank = 1, glocal=TRUE)
+plot(K_battle.csr, . - r ~ r, xlab="d", ylab="K(d)-r")
+```
+
+### Explosion/Remote violence
+
+```{r}
+K_explosion.csr <- envelope(stkde_owin_explosion, Kest, nsim = 99, rank = 1, glocal=TRUE)
+plot(K_explosion.csr, . - r ~ r, xlab="d", ylab="K(d)-r")
+```
+
+### Strategic Development
+
+```{r}
+K_Strat.csr <- envelope(stkde_owin_strat, Kest, nsim = 99, rank = 1, glocal=TRUE)
+plot(K_Strat.csr, . - r ~ r, xlab="d", ylab="K(d)-r")
+```
+
+### Violence against civilians
+
+```{r}
+K_violence.csr <- envelope(stkde_owin_violence, Kest, nsim = 99, rank = 1, glocal=TRUE)
+plot(K_violence.csr, . - r ~ r, xlab="d", ylab="K(d)-r")
+```
+:::
+
+Likewise it does show that the conflicts in 2024 are all generally clustered as it is above the envelope
 
 ## STKDE Insights
 
