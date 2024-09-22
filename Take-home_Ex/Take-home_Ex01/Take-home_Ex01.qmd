@@ -996,23 +996,217 @@ plot(G_violence_2024.csr)
 
 For all the years it is generally a clustered distribution due to it being above the envelope
 
-### KDE on OpenStreetMap
+## KDE on OpenStreetMap
+
+From the various testing, I realised that we can't use the rescale version of the ppp object as their unit of measurement is different so the raster layer and osm can't be overlay
+
+With that let's start plotting the different maps, because we are using the meters version we would have to adjust the sigma to reflect it better
+
+::: panel-tabset
+### 2021
 
 ```{r}
-test_density <- density(acledMyanmar_ppp_2021_Q4.km, 
-             sigma=25, 
+#| fig-width: 20
+#| fig-height: 18
+par(mfrow=c(2,2), cex.main = 3.5)
+map_density <- density(acledMyanmar_ppp_2021_Q1, 
+             sigma=25000, 
              edge=TRUE, 
              kernel="gaussian")
-```
-
-```{r}
-density_raster <- raster(test_density)
+density_raster <- raster(map_density)
 projection(density_raster) <- CRS("+init=EPSG:32647")
+
+m1 <- tm_shape(density_raster) +
+  tm_raster() +
+  tm_shape(osm_myanmar) +
+  tm_lines("black")
+
+map_density <- density(acledMyanmar_ppp_2021_Q2, 
+             sigma=25000, 
+             edge=TRUE, 
+             kernel="gaussian")
+density_raster <- raster(map_density)
+projection(density_raster) <- CRS("+init=EPSG:32647")
+
+m2 <- tm_shape(density_raster) +
+  tm_raster() +
+  tm_shape(osm_myanmar) +
+  tm_lines("black")
+
+map_density <- density(acledMyanmar_ppp_2021_Q3, 
+             sigma=25000, 
+             edge=TRUE, 
+             kernel="gaussian")
+density_raster <- raster(map_density)
+projection(density_raster) <- CRS("+init=EPSG:32647")
+
+m3 <- tm_shape(density_raster) +
+  tm_raster() +
+  tm_shape(osm_myanmar) +
+  tm_lines("black")
+
+map_density <- density(acledMyanmar_ppp_2021_Q4, 
+             sigma=25000, 
+             edge=TRUE, 
+             kernel="gaussian")
+density_raster <- raster(map_density)
+projection(density_raster) <- CRS("+init=EPSG:32647")
+
+m4 <- tm_shape(density_raster) +
+  tm_raster() +
+  tm_shape(osm_myanmar) +
+  tm_lines("black")
+
+tmap_arrange(m1, m2, m3, m4, asp=1, ncol=2, nrow=2)
 ```
 
+### 2022
+
 ```{r}
-plot(osm_myanmar)
+#| fig-width: 20
+#| fig-height: 18
+par(mfrow=c(2,2), cex.main = 3.5)
+map_density <- density(acledMyanmar_ppp_2022_Q1, 
+             sigma=25000, 
+             edge=TRUE, 
+             kernel="gaussian")
+density_raster <- raster(map_density)
+projection(density_raster) <- CRS("+init=EPSG:32647")
+
+m1 <- tm_shape(density_raster) +
+  tm_raster() +
+  tm_shape(osm_myanmar) +
+  tm_lines("black")
+
+map_density <- density(acledMyanmar_ppp_2022_Q2, 
+             sigma=25000, 
+             edge=TRUE, 
+             kernel="gaussian")
+density_raster <- raster(map_density)
+projection(density_raster) <- CRS("+init=EPSG:32647")
+
+m2 <- tm_shape(density_raster) +
+  tm_raster() +
+  tm_shape(osm_myanmar) +
+  tm_lines("black")
+
+map_density <- density(acledMyanmar_ppp_2022_Q3, 
+             sigma=25000, 
+             edge=TRUE, 
+             kernel="gaussian")
+density_raster <- raster(map_density)
+projection(density_raster) <- CRS("+init=EPSG:32647")
+
+m3 <- tm_shape(density_raster) +
+  tm_raster() +
+  tm_shape(osm_myanmar) +
+  tm_lines("black")
+
+map_density <- density(acledMyanmar_ppp_2022_Q4, 
+             sigma=25000, 
+             edge=TRUE, 
+             kernel="gaussian")
+density_raster <- raster(map_density)
+projection(density_raster) <- CRS("+init=EPSG:32647")
+
+m4 <- tm_shape(density_raster) +
+  tm_raster() +
+  tm_shape(osm_myanmar) +
+  tm_lines("black")
+
+tmap_arrange(m1, m2, m3, m4, asp=1, ncol=2, nrow=2)
 ```
+
+### 2023
+
+```{r}
+#| fig-width: 20
+#| fig-height: 18
+par(mfrow=c(2,2), cex.main = 3.5)
+map_density <- density(acledMyanmar_ppp_2023_Q1, 
+             sigma=25000, 
+             edge=TRUE, 
+             kernel="gaussian")
+density_raster <- raster(map_density)
+projection(density_raster) <- CRS("+init=EPSG:32647")
+
+m1 <- tm_shape(density_raster) +
+  tm_raster() +
+  tm_shape(osm_myanmar) +
+  tm_lines("black")
+
+map_density <- density(acledMyanmar_ppp_2023_Q2, 
+             sigma=25000, 
+             edge=TRUE, 
+             kernel="gaussian")
+density_raster <- raster(map_density)
+projection(density_raster) <- CRS("+init=EPSG:32647")
+
+m2 <- tm_shape(density_raster) +
+  tm_raster() +
+  tm_shape(osm_myanmar) +
+  tm_lines("black")
+
+map_density <- density(acledMyanmar_ppp_2023_Q3, 
+             sigma=25000, 
+             edge=TRUE, 
+             kernel="gaussian")
+density_raster <- raster(map_density)
+projection(density_raster) <- CRS("+init=EPSG:32647")
+
+m3 <- tm_shape(density_raster) +
+  tm_raster() +
+  tm_shape(osm_myanmar) +
+  tm_lines("black")
+
+map_density <- density(acledMyanmar_ppp_2023_Q4, 
+             sigma=25000, 
+             edge=TRUE, 
+             kernel="gaussian")
+density_raster <- raster(map_density)
+projection(density_raster) <- CRS("+init=EPSG:32647")
+
+m4 <- tm_shape(density_raster) +
+  tm_raster() +
+  tm_shape(osm_myanmar) +
+  tm_lines("black")
+
+tmap_arrange(m1, m2, m3, m4, asp=1, ncol=2, nrow=2)
+```
+
+### 2024
+
+```{r}
+#| fig-width: 20
+#| fig-height: 18
+par(mfrow=c(2,2), cex.main = 3.5)
+map_density <- density(acledMyanmar_ppp_2024_Q1, 
+             sigma=25000, 
+             edge=TRUE, 
+             kernel="gaussian")
+density_raster <- raster(map_density)
+projection(density_raster) <- CRS("+init=EPSG:32647")
+
+m1 <- tm_shape(density_raster) +
+  tm_raster() +
+  tm_shape(osm_myanmar) +
+  tm_lines("black")
+
+map_density <- density(acledMyanmar_ppp_2024_Q2, 
+             sigma=25000, 
+             edge=TRUE, 
+             kernel="gaussian")
+density_raster <- raster(map_density)
+projection(density_raster) <- CRS("+init=EPSG:32647")
+
+m2 <- tm_shape(density_raster) +
+  tm_raster() +
+  tm_shape(osm_myanmar) +
+  tm_lines("black")
+
+tmap_arrange(m1, m2, asp=1, ncol=2)
+```
+:::
 
 ## KDE insights
 
@@ -1356,3 +1550,5 @@ Intuitively you will think that KDE and STKDE would give the same results cause 
 For the most part STKDE show similar insights in that the conflicts happen in the middle of Myanmar and the outskirts. But something different would be the intensity of the density, as with KDE we changed our own sigma to make it more visible which could explain the difference. Our STKDE has lower intensity for some of the years for example 2023 Q3, which suggest that there is not much conflict clustering as we initially thought. Another one would be 2024 Q2, our KDE suggest that there isn't much conflicts as the intensity of the density is quite low generally around the whole of Myanmar. But our STKDE suggest that for 2024 Q2 there is a lot of conflicts on the central and outskirts of Myanmar, again this could be due to it factoring a period of time into the computation.
 
 Overall both KDE and STKDE, shows that there are conflicts around the central of Myanmar and for the outskirts its generally the South of Myanmar. And currently in the year 2024 its correlating to the Rakhine State where the Arakan Army insurgency took place earlier this year and is still ongoing.
+
+## STKDE on OpenStreetMap
