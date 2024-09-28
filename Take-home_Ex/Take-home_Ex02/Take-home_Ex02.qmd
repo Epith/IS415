@@ -1,0 +1,190 @@
+---
+title: "Take-Home Exercise 2"
+author: "Kwee Cheng"
+date: "September 25, 2024"
+date-modified: "last-modified"
+execute: 
+  eval: true
+  echo: true
+  freeze: true
+categories: [Take-Home, Code]
+---
+
+## Background
+
+Drug abuse is associated with significant negative health, financial and social consequences. Yet, illicit drug consumption remains highly prevalent and continues to be a growing problem worldwide. In 2021, 1 in 17 people aged 15–64 in the world had used a drug in the past 12 months. Notwithstanding population growth, the estimated number of drug users grew from 240 million in 2011 to 296 million in 2021.
+
+The geopolitics of Thailand which is near the [Golden Triangle](https://en.wikipedia.org/wiki/Golden_Triangle_(Southeast_Asia)) of Indochina, the largest drug production site in Asia, and the constant transportation infrastructure development made Thailand became market and transit routes for drug trafficking to the third countries.
+
+In Thailand, drug abuse is one of the major social issue. There are about 2.7 million youths using drugs in Thailand. Among youths aged between 15 and 19 years, there are about 300,000 who have needs for drug treatment. Most of Thai youths involved with drugs are vocational-school students, which nearly doubles in number compared to secondary-school students.
+
+## Objectives
+
+-   If the key indicators of drug abuse of Thailand are independent from space.
+
+-   If the indicators of drug abuse is indeed spatial dependent, then, you would like to detect where are the clusters and outliers, and the hotspots.
+
+-   Last but not least, you are also interested to investigate how the observation above evolve over time.
+
+## Dataset
+
+-   [Thailand Drug Offenses \[2017-2022\]](https://www.kaggle.com/datasets/thaweewatboy/thailand-drug-offenses-2017-2022) at Kaggle.
+
+-   [Thailand - Subnational Administrative Boundaries](https://data.humdata.org/dataset/cod-ab-tha?) at HDX. You are required to use the province boundary data set.
+
+## Packages
+
+-   **sf** provides a standardised way to work with spatial vector data (points, lines, polygons)
+
+-   **spdep** focuses on spatial econometrics and spatial statistics
+
+-   **tmap** create thematic maps
+
+-   **tidyverse** for easy data manipulation and some visualisation
+
+-   **knitr** facilitates the integration of R code and documentation in reproducible research reports
+
+```{r}
+pacman::p_load(sf, spdep, tmap, tidyverse, knitr)
+```
+
+## **Importing data**
+
+Let's load the csv file from kaggle about Thailand's drug offenses
+
+```{r}
+thai_drug <- read_csv("data/thai_drug_offenses_2017_2022.csv")
+```
+
+```{r}
+class(thai_drug)
+```
+
+Next let's load the shapefile of Thailand's province boundary
+
+```{r}
+thai_sf <- st_read(dsn = "data/", 
+                 layer = "tha_admbnda_adm1_rtsd_20220121")
+```
+
+```{r}
+thai_sf
+```
+
+## Data Wrangling
+
+### Misspelled province
+
+I would like to perform a left join on province_en of *thai_drug* and ADM1_EN of *thai_sf*, so I would have to check if there are any missing data or mismatch
+
+```{r}
+combined_data <- bind_cols(thai_drug = sort(unique(thai_drug$province_en)), thai_sf = sort(unique(thai_sf$ADM1_EN)))
+
+# Create a new column to compare the values
+combined_data <- combined_data %>%
+  mutate(same_values = thai_drug == thai_sf) %>% filter(same_values == FALSE)
+
+# View the result
+combined_data
+```
+
+From here we can see that there is a mismatch in the data where there are spelling errors from the data provided kaggle so lets change it.
+
+```{r}
+thai_drug <- thai_drug %>%
+  mutate(province_en = recode(province_en,
+                              "buogkan" = "Bueng Kan",
+                              "Loburi" = "Lop Buri"))
+```
+
+Let's check if there is any mismatch again
+
+```{r}
+combined_data <- bind_cols(thai_drug = sort(unique(thai_drug$province_en)), thai_sf = sort(unique(thai_sf$ADM1_EN)))
+
+
+combined_data <- combined_data %>%
+  mutate(same_values = thai_drug == thai_sf) %>% filter(same_values == FALSE)
+
+
+combined_data
+```
+
+### CRS check
+
+Let's check the crs of the Thai boundary file
+
+```{r}
+st_crs(thai_sf)
+```
+
+Let's convert it into the projected coordinate system of 32647
+
+```{r}
+thai_sf <- thai_sf %>% st_transform(crs = 32647)
+st_crs(thai_sf)
+```
+
+### Hole in boundary file
+
+Next check is there any holes with the boundary file
+
+```{r}
+u_thai <- st_union(thai_sf)
+plot(u_thai)
+```
+
+### Missing row check
+
+Lastly check for the drug abuse csv if there are any missing rows
+
+```{r}
+na <- thai_drug %>%
+  summarise(na_year = sum(is.na(fiscal_year)),
+            na_province = sum(is.na(province_en)),
+            na_drug_offense = sum(is.na(types_of_drug_offenses)),
+            na_cases = sum(is.na(no_cases)))
+print(na)
+```
+
+### Left Join
+
+Great now let's left join both the boundary file and the csv
+
+```{r}
+thai <- left_join(thai_sf,thai_drug, by = c("ADM1_EN" = "province_en")) %>%
+        select(1:3, 17:19,21)
+```
+
+As the combined file is quite huge let's see how we can split it even more, let's choose the only relevant type of drug offenses
+
+```{r}
+unique(thai$types_of_drug_offenses)
+```
+
+The relevant ones would be the first two *drug_use_cases* and *suspects_in_drug_use_cases* however I am only choosing *drug_use_cases* here as it is a confirmed unlike suspects
+
+```{r}
+thai <- thai %>% filter(types_of_drug_offenses == "drug_use_cases")
+```
+
+Next let's split it up by the years
+
+```{r}
+drug <- list()
+for (year in 2017:2022) {
+  drug[[as.character(year)]] <- thai %>% filter(fiscal_year == year)
+}
+
+glimpse(drug[["2017"]])
+```
+
+### Simple Visualisations
+
+Let's just do a simple visualisation of the drug uses in the year 2017 to see what we are dealing with
+
+```{r}
+qtm(drug[["2017"]], "no_cases")
+```
+
+## **Global Measures of Spatial Autocorrelation**
