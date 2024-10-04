@@ -45,7 +45,7 @@ In Thailand, drug abuse is one of the major social issue. There are about 2.7 mi
 -   **knitr** facilitates the integration of R code and documentation in reproducible research reports
 
 ```{r}
-pacman::p_load(sf, spdep, tmap, tidyverse, knitr)
+pacman::p_load(sf, sfdep, tmap, tidyverse, knitr)
 ```
 
 ## **Importing data**
@@ -54,6 +54,10 @@ Let's load the csv file from kaggle about Thailand's drug offenses
 
 ```{r}
 thai_drug <- read_csv("data/thai_drug_offenses_2017_2022.csv")
+```
+
+```{r}
+set.seed(2932)
 ```
 
 ```{r}
@@ -165,7 +169,7 @@ unique(thai$types_of_drug_offenses)
 The relevant ones would be the first two *drug_use_cases* and *suspects_in_drug_use_cases* however I am only choosing *drug_use_cases* here as it is a confirmed unlike suspects
 
 ```{r}
-thai <- thai %>% filter(types_of_drug_offenses == "drug_use_cases")
+thai <- thai %>% filter(types_of_drug_offenses == "drug_use_cases" )
 ```
 
 Next let's split it up by the years
@@ -188,3 +192,325 @@ qtm(drug[["2017"]], "no_cases")
 ```
 
 ## **Global Measures of Spatial Autocorrelation**
+
+### **Calculating Neighbours and Weights**
+
+I would be defining neighbour's based on Queens contiguity, and also let's assign spatial weights to each neighbouring polygon
+
+```{r}
+wm_q_list <- list()
+for (year in 2017:2022) {
+  wm_q <- drug[[as.character(year)]] %>%
+    mutate(nb = st_contiguity((.), queen=TRUE),
+           wt = st_weights(nb, style = "W",allow_zero=TRUE),
+           .before = 1)
+  wm_q_list[[as.character(year)]] <- wm_q
+  
+}
+```
+
+### **Global Moran’s I Test**
+
+::: panel-tabset
+### 2017
+
+```{r}
+wm_q <- wm_q_list[["2017"]]
+global_moran_test(wm_q$no_cases,
+           wm_q$nb,
+           wm_q$wt,
+           zero.policy = TRUE,
+           na.action=na.omit)
+```
+
+### 2018
+
+```{r}
+wm_q <- wm_q_list[["2018"]]
+global_moran_test(wm_q$no_cases,
+           wm_q$nb,
+           wm_q$wt,
+           zero.policy = TRUE,
+           na.action = na.omit)
+```
+
+### 2019
+
+```{r}
+wm_q <- wm_q_list[["2019"]]
+global_moran_test(wm_q$no_cases,
+           wm_q$nb,
+           wm_q$wt,
+           zero.policy = TRUE,
+           na.action=na.omit)
+```
+
+### 2020
+
+```{r}
+wm_q <- wm_q_list[["2020"]]
+global_moran_test(wm_q$no_cases,
+           wm_q$nb,
+           wm_q$wt,
+           zero.policy = TRUE,
+           na.action=na.omit)
+```
+
+### 2021
+
+```{r}
+wm_q <- wm_q_list[["2021"]]
+global_moran_test(wm_q$no_cases,
+           wm_q$nb,
+           wm_q$wt,
+           zero.policy = TRUE,
+           na.action=na.omit)
+```
+
+### 2022
+
+```{r}
+wm_q <- wm_q_list[["2022"]]
+global_moran_test(wm_q$no_cases,
+           wm_q$nb,
+           wm_q$wt,
+           zero.policy = TRUE,
+           na.action=na.omit)
+```
+:::
+
+### **Global Moran’s** I permutation test
+
+::: panel-tabset
+### 2017
+
+```{r}
+wm_q <- wm_q_list[["2017"]]
+gmres <-global_moran_perm(wm_q$no_cases,
+                   wm_q$nb,
+                   wm_q$wt,
+                   zero.policy = TRUE,
+                   nsim = 999,
+                   na.action=na.omit)
+```
+
+**Visualising Monte Carlo Moran’s I**
+
+```{r}
+gmres
+summary(gmres$res[1:999])
+```
+
+### 2018
+
+```{r}
+wm_q <- wm_q_list[["2018"]]
+global_moran_perm(wm_q$no_cases,
+           wm_q$nb,
+           wm_q$wt,
+           zero.policy = TRUE,
+           nsim = 999,
+           na.action=na.omit)
+```
+
+### 2019
+
+```{r}
+wm_q <- wm_q_list[["2019"]]
+global_moran_perm(wm_q$no_cases,
+           wm_q$nb,
+           wm_q$wt,
+           zero.policy = TRUE,
+           nsim = 999,
+           na.action=na.omit)
+```
+
+### 2020
+
+```{r}
+wm_q <- wm_q_list[["2020"]]
+global_moran_perm(wm_q$no_cases,
+           wm_q$nb,
+           wm_q$wt,
+           zero.policy = TRUE,
+           nsim = 999,
+           na.action=na.omit)
+```
+
+### 2021
+
+```{r}
+wm_q <- wm_q_list[["2021"]]
+global_moran_perm(wm_q$no_cases,
+           wm_q$nb,
+           wm_q$wt,
+           zero.policy = TRUE,
+           nsim = 999,
+           na.action=na.omit)
+```
+
+### 2022
+
+```{r}
+wm_q <- wm_q_list[["2022"]]
+global_moran_perm(wm_q$no_cases,
+           wm_q$nb,
+           wm_q$wt,
+           zero.policy = TRUE,
+           nsim = 999,
+           na.action=na.omit)
+```
+:::
+
+##  Local Moran I
+
+### Calculating Local Moran I
+
+```{r}
+lisa_list <- list()
+for (year in 2017:2022) {
+  wm_q <- wm_q_list[[as.character(year)]] %>%
+          mutate(local_moran = local_moran(
+            no_cases, nb, wt, nsim = 999, zero.policy=TRUE),
+                 .before = 1) %>%
+          unnest(local_moran)
+  lisa_list[[as.character(year)]] <- wm_q
+  
+}
+```
+
+### Visualising Local Moran I
+
+::: panel-tabset
+### 2017
+
+```{r}
+lisa <- lisa_list[["2017"]]
+map1 <- tm_shape(lisa) +
+  tm_fill("ii") + 
+  tm_borders(alpha = 0.5) +
+  tm_view(set.zoom.limits = c(6,8)) +
+  tm_layout(main.title = "local Moran's I of No of cases",
+            main.title.size = 0.8)
+
+map2 <- tm_shape(lisa) +
+  tm_fill("p_ii",
+          breaks = c(0, 0.001, 0.01, 0.05, 1),
+              labels = c("0.001", "0.01", "0.05", "Not sig")) + 
+  tm_borders(alpha = 0.5) +
+  tm_layout(main.title = "p-value of local Moran's I",
+            main.title.size = 0.8)
+
+tmap_arrange(map1, map2, ncol = 2)
+```
+
+### 2018
+
+```{r}
+lisa <- lisa_list[["2018"]]
+map1 <- tm_shape(lisa) +
+  tm_fill("ii") + 
+  tm_borders(alpha = 0.5) +
+  tm_view(set.zoom.limits = c(6,8)) +
+  tm_layout(main.title = "local Moran's I of No of cases",
+            main.title.size = 0.8)
+
+map2 <- tm_shape(lisa) +
+  tm_fill("p_ii",
+          breaks = c(0, 0.001, 0.01, 0.05, 1),
+              labels = c("0.001", "0.01", "0.05", "Not sig")) + 
+  tm_borders(alpha = 0.5) +
+  tm_layout(main.title = "p-value of local Moran's I",
+            main.title.size = 0.8)
+
+tmap_arrange(map1, map2, ncol = 2)
+```
+
+### 2019
+
+```{r}
+lisa <- lisa_list[["2019"]]
+map1 <- tm_shape(lisa) +
+  tm_fill("ii") + 
+  tm_borders(alpha = 0.5) +
+  tm_view(set.zoom.limits = c(6,8)) +
+  tm_layout(main.title = "local Moran's I of No of cases",
+            main.title.size = 0.8)
+
+map2 <- tm_shape(lisa) +
+  tm_fill("p_ii",
+          breaks = c(0, 0.001, 0.01, 0.05, 1),
+              labels = c("0.001", "0.01", "0.05", "Not sig")) + 
+  tm_borders(alpha = 0.5) +
+  tm_layout(main.title = "p-value of local Moran's I",
+            main.title.size = 0.8)
+
+tmap_arrange(map1, map2, ncol = 2)
+```
+
+### 2020
+
+```{r}
+lisa <- lisa_list[["2020"]]
+map1 <- tm_shape(lisa) +
+  tm_fill("ii") + 
+  tm_borders(alpha = 0.5) +
+  tm_view(set.zoom.limits = c(6,8)) +
+  tm_layout(main.title = "local Moran's I of No of cases",
+            main.title.size = 0.8)
+
+map2 <- tm_shape(lisa) +
+  tm_fill("p_ii",
+          breaks = c(0, 0.001, 0.01, 0.05, 1),
+              labels = c("0.001", "0.01", "0.05", "Not sig")) + 
+  tm_borders(alpha = 0.5) +
+  tm_layout(main.title = "p-value of local Moran's I",
+            main.title.size = 0.8)
+
+tmap_arrange(map1, map2, ncol = 2)
+```
+
+### 2021
+
+```{r}
+lisa <- lisa_list[["2021"]]
+map1 <- tm_shape(lisa) +
+  tm_fill("ii") + 
+  tm_borders(alpha = 0.5) +
+  tm_view(set.zoom.limits = c(6,8)) +
+  tm_layout(main.title = "local Moran's I of No of cases",
+            main.title.size = 0.8)
+
+map2 <- tm_shape(lisa) +
+  tm_fill("p_ii",
+          breaks = c(0, 0.001, 0.01, 0.05, 1),
+              labels = c("0.001", "0.01", "0.05", "Not sig")) + 
+  tm_borders(alpha = 0.5) +
+  tm_layout(main.title = "p-value of local Moran's I",
+            main.title.size = 0.8)
+
+tmap_arrange(map1, map2, ncol = 2)
+```
+
+### 2022
+
+```{r}
+lisa <- lisa_list[["2022"]]
+map1 <- tm_shape(lisa) +
+  tm_fill("ii") + 
+  tm_borders(alpha = 0.5) +
+  tm_view(set.zoom.limits = c(6,8)) +
+  tm_layout(main.title = "local Moran's I of No of cases",
+            main.title.size = 0.8)
+
+map2 <- tm_shape(lisa) +
+  tm_fill("p_ii",
+          breaks = c(0, 0.001, 0.01, 0.05, 1),
+              labels = c("0.001", "0.01", "0.05", "Not sig")) + 
+  tm_borders(alpha = 0.5) +
+  tm_layout(main.title = "p-value of local Moran's I",
+            main.title.size = 0.8)
+
+tmap_arrange(map1, map2, ncol = 2)
+```
+:::
