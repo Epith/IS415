@@ -166,10 +166,13 @@ As the combined file is quite huge let's see how we can split it even more, let'
 unique(thai$types_of_drug_offenses)
 ```
 
-The relevant ones would be the first two *drug_use_cases* and *suspects_in_drug_use_cases* however I am only choosing *drug_use_cases* here as it is a confirmed unlike suspects
+Let's choose everything but the suspects because suspects are not really confirmed in the cases but it could provide some supplementary.
 
 ```{r}
-thai <- thai %>% filter(types_of_drug_offenses == "drug_use_cases" )
+drug_offenses <- c(
+  "drug_use_cases", "possession_cases", "possession_with_intent_to_distribute_cases", "trafficking_cases", "production_cases", "import_cases", "export_cases", "conspiracy_cases"
+)
+thai <- thai %>% filter(types_of_drug_offenses %in% drug_offenses )
 ```
 
 Next let's split it up by the years
@@ -198,6 +201,7 @@ qtm(drug[["2017"]], "no_cases")
 I would be defining neighbour's based on Queens contiguity, and also let's assign spatial weights to each neighbouring polygon
 
 ```{r}
+#| eval: false
 wm_q_list <- list()
 for (year in 2017:2022) {
   wm_q <- drug[[as.character(year)]] %>%
@@ -207,6 +211,18 @@ for (year in 2017:2022) {
   wm_q_list[[as.character(year)]] <- wm_q
   
 }
+```
+
+As this takes a lot of time lets save this list into a rds file
+
+```{r}
+#| eval: false
+write_rds(wm_q_list, "data/rds/wm_q_list.rds")
+```
+
+```{r}
+#| echo: false
+wm_q_list <- read_rds("data/rds/wm_q_list.rds")
 ```
 
 ### **Global Moran’s I Test**
@@ -362,7 +378,7 @@ global_moran_perm(wm_q$no_cases,
 ```
 :::
 
-##  Local Moran I
+## Local Moran I
 
 ### Calculating Local Moran I
 

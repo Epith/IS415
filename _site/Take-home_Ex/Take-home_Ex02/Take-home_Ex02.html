@@ -284,7 +284,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">October 4, 2024</p>
+      <p class="date-modified">October 12, 2024</p>
     </div>
   </div>
     
@@ -360,8 +360,7 @@ dbl (2): fiscal_year, no_cases
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                 <span class="at">layer =</span> <span class="st">"tha_admbnda_adm1_rtsd_20220121"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Reading layer `tha_admbnda_adm1_rtsd_20220121' from data source 
-  `C:\SMU\Y4S1\IS415\IS415\Take-home_Ex\Take-home_Ex02\data' 
-  using driver `ESRI Shapefile'
+  `C:\IS415\Take-home_Ex\Take-home_Ex02\data' using driver `ESRI Shapefile'
 Simple feature collection with 77 features and 16 fields
 Geometry type: MULTIPOLYGON
 Dimension:     XY
@@ -604,9 +603,12 @@ PROJCRS["WGS 84 / UTM zone 47N",
 [16] "suspects_in_conspiracy_cases"                          </code></pre>
 </div>
 </div>
-<p>The relevant ones would be the first two <em>drug_use_cases</em> and <em>suspects_in_drug_use_cases</em> however I am only choosing <em>drug_use_cases</em> here as it is a confirmed unlike suspects</p>
+<p>Let’s choose everything but the suspects because suspects are not really confirmed in the cases but it could provide some supplementary.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>thai <span class="ot">&lt;-</span> thai <span class="sc">%&gt;%</span> <span class="fu">filter</span>(types_of_drug_offenses <span class="sc">==</span> <span class="st">"drug_use_cases"</span> )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>drug_offenses <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"drug_use_cases"</span>, <span class="st">"possession_cases"</span>, <span class="st">"possession_with_intent_to_distribute_cases"</span>, <span class="st">"trafficking_cases"</span>, <span class="st">"production_cases"</span>, <span class="st">"import_cases"</span>, <span class="st">"export_cases"</span>, <span class="st">"conspiracy_cases"</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>thai <span class="ot">&lt;-</span> thai <span class="sc">%&gt;%</span> <span class="fu">filter</span>(types_of_drug_offenses <span class="sc">%in%</span> drug_offenses )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Next let’s split it up by the years</p>
 <div class="cell">
@@ -617,14 +619,14 @@ PROJCRS["WGS 84 / UTM zone 47N",
 <span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(drug[[<span class="st">"2017"</span>]])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Rows: 77
+<pre><code>Rows: 616
 Columns: 7
-$ Shape_Leng             &lt;dbl&gt; 2.417227, 1.695100, 1.251111, 1.884945, 3.04171…
-$ Shape_Area             &lt;dbl&gt; 0.13133873, 0.07926199, 0.05323766, 0.12698345,…
-$ ADM1_EN                &lt;chr&gt; "Bangkok", "Samut Prakan", "Nonthaburi", "Pathu…
+$ Shape_Leng             &lt;dbl&gt; 2.417227, 2.417227, 2.417227, 2.417227, 2.41722…
+$ Shape_Area             &lt;dbl&gt; 0.13133873, 0.13133873, 0.13133873, 0.13133873,…
+$ ADM1_EN                &lt;chr&gt; "Bangkok", "Bangkok", "Bangkok", "Bangkok", "Ba…
 $ fiscal_year            &lt;dbl&gt; 2017, 2017, 2017, 2017, 2017, 2017, 2017, 2017,…
-$ types_of_drug_offenses &lt;chr&gt; "drug_use_cases", "drug_use_cases", "drug_use_c…
-$ no_cases               &lt;dbl&gt; 11871, 820, 553, 450, 378, 208, 727, 127, 200, …
+$ types_of_drug_offenses &lt;chr&gt; "drug_use_cases", "possession_cases", "possessi…
+$ no_cases               &lt;dbl&gt; 11871, 9224, 6374, 950, 316, 0, 2, 10, 820, 334…
 $ geometry               &lt;MULTIPOLYGON [m]&gt; MULTIPOLYGON (((674339.8 15..., MU…</code></pre>
 </div>
 </div>
@@ -662,50 +664,10 @@ $ geometry               &lt;MULTIPOLYGON [m]&gt; MULTIPOLYGON (((674339.8 15...
 <span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>  wm_q_list[[<span class="fu">as.character</span>(year)]] <span class="ot">&lt;-</span> wm_q</span>
 <span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>  </span>
 <span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: There were 2 warnings in `stopifnot()`.
-The first warning was:
-ℹ In argument: `nb = st_contiguity((.), queen = TRUE)`.
-Caused by warning in `spdep::poly2nb()`:
-! some observations have no neighbours;
-if this seems unexpected, try increasing the snap argument.
-ℹ Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.
-There were 2 warnings in `stopifnot()`.
-The first warning was:
-ℹ In argument: `nb = st_contiguity((.), queen = TRUE)`.
-Caused by warning in `spdep::poly2nb()`:
-! some observations have no neighbours;
-if this seems unexpected, try increasing the snap argument.
-ℹ Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.
-There were 2 warnings in `stopifnot()`.
-The first warning was:
-ℹ In argument: `nb = st_contiguity((.), queen = TRUE)`.
-Caused by warning in `spdep::poly2nb()`:
-! some observations have no neighbours;
-if this seems unexpected, try increasing the snap argument.
-ℹ Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.
-There were 2 warnings in `stopifnot()`.
-The first warning was:
-ℹ In argument: `nb = st_contiguity((.), queen = TRUE)`.
-Caused by warning in `spdep::poly2nb()`:
-! some observations have no neighbours;
-if this seems unexpected, try increasing the snap argument.
-ℹ Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.
-There were 2 warnings in `stopifnot()`.
-The first warning was:
-ℹ In argument: `nb = st_contiguity((.), queen = TRUE)`.
-Caused by warning in `spdep::poly2nb()`:
-! some observations have no neighbours;
-if this seems unexpected, try increasing the snap argument.
-ℹ Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.
-There were 2 warnings in `stopifnot()`.
-The first warning was:
-ℹ In argument: `nb = st_contiguity((.), queen = TRUE)`.
-Caused by warning in `spdep::poly2nb()`:
-! some observations have no neighbours;
-if this seems unexpected, try increasing the snap argument.
-ℹ Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.</code></pre>
 </div>
+<p>As this takes a lot of time lets save this list into a rds file</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(wm_q_list, <span class="st">"data/rds/wm_q_list.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="global-morans-i-test" class="level3">
@@ -726,14 +688,13 @@ if this seems unexpected, try increasing the snap argument.
     Moran I test under randomisation
 
 data:  x  
-weights: listw  
-n reduced by no-neighbour observations  
+weights: listw    
 
-Moran I statistic standard deviate = 1.5049, p-value = 0.06618
+Moran I statistic standard deviate = 4.8794, p-value = 5.319e-07
 alternative hypothesis: greater
 sample estimates:
 Moran I statistic       Expectation          Variance 
-      0.077263424      -0.013333333       0.003624223 </code></pre>
+     3.981645e-02     -1.626016e-03      7.213589e-05 </code></pre>
 </div>
 </div>
 </div>
@@ -750,14 +711,13 @@ Moran I statistic       Expectation          Variance
     Moran I test under randomisation
 
 data:  x  
-weights: listw  
-n reduced by no-neighbour observations  
+weights: listw    
 
-Moran I statistic standard deviate = 1.673, p-value = 0.04716
+Moran I statistic standard deviate = 3.6488, p-value = 0.0001318
 alternative hypothesis: greater
 sample estimates:
 Moran I statistic       Expectation          Variance 
-      0.091283835      -0.013333333       0.003910294 </code></pre>
+     2.910879e-02     -1.626016e-03      7.095291e-05 </code></pre>
 </div>
 </div>
 </div>
@@ -774,14 +734,13 @@ Moran I statistic       Expectation          Variance
     Moran I test under randomisation
 
 data:  x  
-weights: listw  
-n reduced by no-neighbour observations  
+weights: listw    
 
-Moran I statistic standard deviate = 2.1385, p-value = 0.01624
+Moran I statistic standard deviate = 3.2694, p-value = 0.0005389
 alternative hypothesis: greater
 sample estimates:
 Moran I statistic       Expectation          Variance 
-      0.138046280      -0.013333333       0.005010889 </code></pre>
+     2.654296e-02     -1.626016e-03      7.423478e-05 </code></pre>
 </div>
 </div>
 </div>
@@ -798,14 +757,13 @@ Moran I statistic       Expectation          Variance
     Moran I test under randomisation
 
 data:  x  
-weights: listw  
-n reduced by no-neighbour observations  
+weights: listw    
 
-Moran I statistic standard deviate = 1.382, p-value = 0.08349
+Moran I statistic standard deviate = 2.9975, p-value = 0.001361
 alternative hypothesis: greater
 sample estimates:
 Moran I statistic       Expectation          Variance 
-      0.087091664      -0.013333333       0.005280586 </code></pre>
+     2.444995e-02     -1.626016e-03      7.567537e-05 </code></pre>
 </div>
 </div>
 </div>
@@ -822,14 +780,13 @@ Moran I statistic       Expectation          Variance
     Moran I test under randomisation
 
 data:  x  
-weights: listw  
-n reduced by no-neighbour observations  
+weights: listw    
 
-Moran I statistic standard deviate = 2.862, p-value = 0.002105
+Moran I statistic standard deviate = 2.6409, p-value = 0.004134
 alternative hypothesis: greater
 sample estimates:
 Moran I statistic       Expectation          Variance 
-       0.20376109       -0.01333333        0.00575372 </code></pre>
+     2.149092e-02     -1.626016e-03      7.662109e-05 </code></pre>
 </div>
 </div>
 </div>
@@ -846,14 +803,13 @@ Moran I statistic       Expectation          Variance
     Moran I test under randomisation
 
 data:  x  
-weights: listw  
-n reduced by no-neighbour observations  
+weights: listw    
 
-Moran I statistic standard deviate = 2.7688, p-value = 0.002813
+Moran I statistic standard deviate = 1.8315, p-value = 0.03351
 alternative hypothesis: greater
 sample estimates:
 Moran I statistic       Expectation          Variance 
-      0.197931897      -0.013333333       0.005822019 </code></pre>
+     1.448435e-02     -1.626016e-03      7.737631e-05 </code></pre>
 </div>
 </div>
 </div>
@@ -886,13 +842,13 @@ data:  x
 weights: listw  
 number of simulations + 1: 1000 
 
-statistic = 0.077263, observed rank = 922, p-value = 0.156
+statistic = 0.039816, observed rank = 998, p-value = 0.004
 alternative hypothesis: two.sided</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(gmres<span class="sc">$</span>res[<span class="dv">1</span><span class="sc">:</span><span class="dv">999</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
--0.14865 -0.05822 -0.02058 -0.01362  0.02336  0.26127 </code></pre>
+<pre><code>     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+-0.024073 -0.007182 -0.002121 -0.001152  0.003359  0.048201 </code></pre>
 </div>
 </div>
 </div>
@@ -913,7 +869,7 @@ data:  x
 weights: listw  
 number of simulations + 1: 1000 
 
-statistic = 0.091284, observed rank = 927, p-value = 0.146
+statistic = 0.029109, observed rank = 999, p-value = 0.002
 alternative hypothesis: two.sided</code></pre>
 </div>
 </div>
@@ -935,7 +891,7 @@ data:  x
 weights: listw  
 number of simulations + 1: 1000 
 
-statistic = 0.13805, observed rank = 973, p-value = 0.054
+statistic = 0.026543, observed rank = 997, p-value = 0.006
 alternative hypothesis: two.sided</code></pre>
 </div>
 </div>
@@ -957,7 +913,7 @@ data:  x
 weights: listw  
 number of simulations + 1: 1000 
 
-statistic = 0.087092, observed rank = 919, p-value = 0.162
+statistic = 0.02445, observed rank = 985, p-value = 0.03
 alternative hypothesis: two.sided</code></pre>
 </div>
 </div>
@@ -979,7 +935,7 @@ data:  x
 weights: listw  
 number of simulations + 1: 1000 
 
-statistic = 0.20376, observed rank = 995, p-value = 0.01
+statistic = 0.021491, observed rank = 986, p-value = 0.028
 alternative hypothesis: two.sided</code></pre>
 </div>
 </div>
@@ -1001,7 +957,7 @@ data:  x
 weights: listw  
 number of simulations + 1: 1000 
 
-statistic = 0.19793, observed rank = 992, p-value = 0.016
+statistic = 0.014484, observed rank = 954, p-value = 0.092
 alternative hypothesis: two.sided</code></pre>
 </div>
 </div>
@@ -1057,7 +1013,7 @@ alternative hypothesis: two.sided</code></pre>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="Take-home_Ex02_files/figure-html/unnamed-chunk-34-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Take-home_Ex02_files/figure-html/unnamed-chunk-36-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -1088,7 +1044,7 @@ alternative hypothesis: two.sided</code></pre>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="Take-home_Ex02_files/figure-html/unnamed-chunk-35-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Take-home_Ex02_files/figure-html/unnamed-chunk-37-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -1119,7 +1075,7 @@ alternative hypothesis: two.sided</code></pre>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="Take-home_Ex02_files/figure-html/unnamed-chunk-36-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Take-home_Ex02_files/figure-html/unnamed-chunk-38-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -1150,7 +1106,7 @@ alternative hypothesis: two.sided</code></pre>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="Take-home_Ex02_files/figure-html/unnamed-chunk-37-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Take-home_Ex02_files/figure-html/unnamed-chunk-39-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -1181,7 +1137,7 @@ alternative hypothesis: two.sided</code></pre>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="Take-home_Ex02_files/figure-html/unnamed-chunk-38-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Take-home_Ex02_files/figure-html/unnamed-chunk-40-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -1212,7 +1168,7 @@ alternative hypothesis: two.sided</code></pre>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="Take-home_Ex02_files/figure-html/unnamed-chunk-39-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Take-home_Ex02_files/figure-html/unnamed-chunk-41-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
