@@ -131,7 +131,7 @@ st_crs(thai_sf)
 
 ### Hole in boundary file
 
-Next check is there any holes with the boundary file
+Next check if there are any holes with the boundary file
 
 ```{r}
 u_thai <- st_union(thai_sf)
@@ -166,12 +166,13 @@ As the combined file is quite huge let's see how we can split it even more, let'
 unique(thai$types_of_drug_offenses)
 ```
 
-Let's choose everything but the suspects because suspects are not really confirmed in the cases but it could provide some supplementary.
+Let's choose everything but the suspects as suspects are not really confirmed cases but it could provide some supplementary in comparison.
 
 ```{r}
 drug_offenses <- c(
   "drug_use_cases", "possession_cases", "possession_with_intent_to_distribute_cases", "trafficking_cases", "production_cases", "import_cases", "export_cases", "conspiracy_cases"
 )
+
 thai <- thai %>% filter(types_of_drug_offenses %in% drug_offenses )
 ```
 
@@ -192,6 +193,20 @@ Let's just do a simple visualisation of the drug uses in the year 2017 to see wh
 
 ```{r}
 qtm(drug[["2017"]], "no_cases")
+```
+
+Nothing much can be visualised so let's separate out the type of cases again to only drug use
+
+```{r}
+temp <- drug[["2017"]]
+tmap_mode("plot")
+temp %>%
+  filter(types_of_drug_offenses == "drug_use_cases") %>%
+  tm_shape() +
+  tm_fill("no_cases",
+            n = 5,
+            style = "equal") +  
+    tm_borders(alpha = 0.5)
 ```
 
 ## **Global Measures of Spatial Autocorrelation**
@@ -226,6 +241,8 @@ wm_q_list <- read_rds("data/rds/wm_q_list.rds")
 ```
 
 ### **Global Moran’s I Test**
+
+To assess spatial autocorrelation in our dataset, or how the presence of drug use cases in a province may form clusters.
 
 ::: panel-tabset
 ### 2017
@@ -295,6 +312,12 @@ global_moran_test(wm_q$no_cases,
 ```
 :::
 
+From the test for the different years, the positive moran’s I statistic suggests that there is clustering, or a degree of spatial autocorrelation. This might be expected as spreading the use of drugs to neighbouring places seems like a common thing to do, if you wanna spread your influence.
+
+We can also see that the P-value is small. From a frequentist approach, we can see that this is unlikely to have occured by chance.
+
+To strengthen our findings, we run a monte-carlo simulation.
+
 ### **Global Moran’s** I permutation test
 
 ::: panel-tabset
@@ -302,19 +325,12 @@ global_moran_test(wm_q$no_cases,
 
 ```{r}
 wm_q <- wm_q_list[["2017"]]
-gmres <-global_moran_perm(wm_q$no_cases,
-                   wm_q$nb,
-                   wm_q$wt,
-                   zero.policy = TRUE,
-                   nsim = 999,
-                   na.action=na.omit)
-```
-
-**Visualising Monte Carlo Moran’s I**
-
-```{r}
-gmres
-summary(gmres$res[1:999])
+global_moran_perm(wm_q$no_cases,
+           wm_q$nb,
+           wm_q$wt,
+           zero.policy = TRUE,
+           nsim = 999,
+           na.action=na.omit)
 ```
 
 ### 2018
@@ -378,9 +394,99 @@ global_moran_perm(wm_q$no_cases,
 ```
 :::
 
+From the outputs above, we can observe that the Moran’s I statistic (after 1000 permutations) for the year 2017 **0.039816** with a p-value \< **2.2e-16,** year 2018 **0.029109** with a p-value 0.002, year 2019 **0.026543** with a p-value 0.006, year 2020 **0.02445** with a p-value 0.03, year 2021 **0.014484** with a p-value 0.092. All of these are almost identical to the previous result with low p-value which suggest that it did not happen randomly.
+
+We can visualise it with a histogram
+
+::: panel-tabset
+### 2017
+
+```{r}
+wm_q <- wm_q_list[["2017"]]
+gmres <-global_moran_perm(wm_q$no_cases,
+                   wm_q$nb,
+                   wm_q$wt,
+                   zero.policy = TRUE,
+                   nsim = 999,
+                   na.action=na.omit)
+
+hist(gmres$res, main="Histogram of Global Moran's I Monte-Carlo Simulation 2017", xlab="Monte-Carlo Results", ylab="Frequency")
+
+abline(v = gmres$statistic, col = "red")
+```
+
+### 2018
+
+```{r}
+wm_q <- wm_q_list[["2018"]]
+gmres <-global_moran_perm(wm_q$no_cases,
+                   wm_q$nb,
+                   wm_q$wt,
+                   zero.policy = TRUE,
+                   nsim = 999,
+                   na.action=na.omit)
+
+hist(gmres$res, main="Histogram of Global Moran's I Monte-Carlo Simulation 2018", xlab="Monte-Carlo Results", ylab="Frequency")
+
+abline(v = gmres$statistic, col = "red")
+```
+
+### 2019
+
+```{r}
+wm_q <- wm_q_list[["2019"]]
+gmres <-global_moran_perm(wm_q$no_cases,
+                   wm_q$nb,
+                   wm_q$wt,
+                   zero.policy = TRUE,
+                   nsim = 999,
+                   na.action=na.omit)
+
+hist(gmres$res, main="Histogram of Global Moran's I Monte-Carlo Simulation 2019", xlab="Monte-Carlo Results", ylab="Frequency")
+
+abline(v = gmres$statistic, col = "red")
+```
+
+### 2020
+
+```{r}
+wm_q <- wm_q_list[["2020"]]
+gmres <-global_moran_perm(wm_q$no_cases,
+                   wm_q$nb,
+                   wm_q$wt,
+                   zero.policy = TRUE,
+                   nsim = 999,
+                   na.action=na.omit)
+
+hist(gmres$res, main="Histogram of Global Moran's I Monte-Carlo Simulation 2020", xlab="Monte-Carlo Results", ylab="Frequency")
+
+abline(v = gmres$statistic, col = "red")
+```
+
+### 2021
+
+```{r}
+wm_q <- wm_q_list[["2021"]]
+gmres <-global_moran_perm(wm_q$no_cases,
+                   wm_q$nb,
+                   wm_q$wt,
+                   zero.policy = TRUE,
+                   nsim = 999,
+                   na.action=na.omit)
+
+hist(gmres$res, main="Histogram of Global Moran's I Monte-Carlo Simulation 2021", xlab="Monte-Carlo Results", ylab="Frequency")
+
+abline(v = gmres$statistic, col = "red")
+```
+:::
+
 ## Local Moran I
 
+Local Indicators of Spatial Association, or LISA, let us evaluate clusters between provinces. Where higher values denote that the region is more heavily influenced by its surroundings.
+
 ### Calculating Local Moran I
+
+Calculating local Moran’s I statistics and append the results to the original dataframe as new columns.
 
 ```{r}
 lisa_list <- list()
@@ -420,6 +526,14 @@ map2 <- tm_shape(lisa) +
 tmap_arrange(map1, map2, ncol = 2)
 ```
 
+From this map, we can observe statistically significant spatial autocorrelation in some central and central south province and the southern region. In the case of the central region, the significant local Moran’s I statistics tell us that for this province may or may not be a cluster as its quite close to being statistically insignificant or it could be an outlier. However for the central south of Thailand it seems to be statistically significant and the cluster did not happen by choice. Upon further looking at the province Bangkok seems to be one of the areas. The high clustering could be due to it being a tourist spot where they target foreigners which would have the money to buy drugs? But nothing much could be known.
+
+![](images/clipboard-1240825146.png)
+
+As for the very south of Thailand it could be outliers which affect the southern Islands as it is surround by statistically insignificant places. And it is not really a widely popular tourist spot, where it could have a market for it.
+
+![](images/clipboard-720100643.png)
+
 ### 2018
 
 ```{r}
@@ -441,6 +555,8 @@ map2 <- tm_shape(lisa) +
 
 tmap_arrange(map1, map2, ncol = 2)
 ```
+
+From this map, we can observe again that there is statistically significant spatial autocorrelation in central south province and the southern region. In the case of the central south it is the same few provinces which have high statistical significance which shows that the clustering wasn't random and it is indeed a cluster with high drug cases. Also the central province is not gone, which means that it was indeed an outlier. For the southern province, it seems like the previous few islands were indeed outliers, and now the the remaining province seems to be becoming less statistically insignificant.
 
 ### 2019
 
@@ -464,6 +580,8 @@ map2 <- tm_shape(lisa) +
 tmap_arrange(map1, map2, ncol = 2)
 ```
 
+Likewise it is the same as for the year 2018, however something to be seen is that the central south province, the p-value seems to be getting higher but is of statistical significance. Could it be that the drug operations are being handled and therefore they have to change the base of operation?
+
 ### 2020
 
 ```{r}
@@ -485,6 +603,8 @@ map2 <- tm_shape(lisa) +
 
 tmap_arrange(map1, map2, ncol = 2)
 ```
+
+It seems like the hotspot of clustering of near central south seems to be dispersing, and the outlier of the central province seems to be back. However interesting the southern region seems to be expanding and the clustering seems like its starting to be satistically significant.
 
 ### 2021
 
@@ -508,6 +628,8 @@ map2 <- tm_shape(lisa) +
 tmap_arrange(map1, map2, ncol = 2)
 ```
 
+The central south provinces which was a hotspot in 2017-2019 seems to be completely gone and the area which we thought was an outlier in central area. It seems to have spread its fluence suggesting that there might be some clustering happening. However there could be a potential outlier in the far east. Likewise there is still some sort of clustering at the southern region.
+
 ### 2022
 
 ```{r}
@@ -529,4 +651,160 @@ map2 <- tm_shape(lisa) +
 
 tmap_arrange(map1, map2, ncol = 2)
 ```
+
+For this year there was complete shift, the previous years clustering seems to be completely gone and it has now been shift to the north-eastern region of Thailand which is rather interesting as there was no prior suggestion that it could happen. Near the western region there is some small clustering happening.
 :::
+
+### LISA
+
+The local indicator of spatial association (LISA) for each observation gives an indication of the extent of significant spatial clustering of similar values around that observation. LISA map is a categorical map showing type of outliers and clusters. There are two types of outliers namely: **High-Low** and **Low-High** outliers. Likewise, there are two type of clusters namely: **High-High** and **Low-Low** cluaters.
+
+-   **High-Low Outliers:** Provinces with a high value of drug cases, surrounded by neighbouring provinces with low values of drug cases.
+
+-   **Low-High Outliers**: Provinces with a low value of drug cases, surrounded by neighbouring provinces with high values of drug cases.
+
+-   **High-High Clusters**: Provinces with a high value of drug cases, surrounded by neighbouring provinces with high values of drug cases.
+
+-   **Low-Low Clusters**: Provinces with a low value of drug cases, surrounded by neighbouring provinces with low values of drug cases.
+
+```{r}
+lisa2017_sig <- lisa_list[["2017"]] %>% filter(p_ii_sim < 0.05)
+lisa2018_sig <- lisa_list[["2018"]] %>% filter(p_ii_sim < 0.05)
+lisa2019_sig <- lisa_list[["2019"]] %>% filter(p_ii_sim < 0.05)
+lisa2020_sig <- lisa_list[["2020"]] %>% filter(p_ii_sim < 0.05)
+lisa2021_sig <- lisa_list[["2021"]] %>% filter(p_ii_sim < 0.05)
+lisa2022_sig <- lisa_list[["2022"]] %>% filter(p_ii_sim < 0.05)
+
+
+# Create individual maps
+map_2017 <- tm_shape(lisa_list[["2017"]]) +
+  tm_polygons() + 
+  tm_borders(alpha = 0.5) + 
+  tm_shape(lisa2017_sig) + 
+  tm_fill("mean", title = "LISA class") +
+  tm_borders(alpha = 0.4) +
+  tm_layout(main.title = "LISA map of drug cases 2017", main.title.size = 1)
+
+map_2018 <- tm_shape(lisa_list[["2018"]]) +
+  tm_polygons() + 
+  tm_borders(alpha = 0.5) + 
+  tm_shape(lisa2018_sig) + 
+  tm_fill("mean", title = "LISA class") +
+  tm_borders(alpha = 0.4) +
+  tm_layout(main.title = "LISA map of drug cases 2018", main.title.size = 1)
+
+map_2019 <- tm_shape(lisa_list[["2019"]]) +
+  tm_polygons() + 
+  tm_borders(alpha = 0.5) + 
+  tm_shape(lisa2019_sig) + 
+  tm_fill("mean", title = "LISA class") +
+  tm_borders(alpha = 0.4) +
+  tm_layout(main.title = "LISA map of drug cases 2019", main.title.size = 1)
+
+map_2020 <- tm_shape(lisa_list[["2020"]]) +
+  tm_polygons() + 
+  tm_borders(alpha = 0.5) + 
+  tm_shape(lisa2020_sig) + 
+  tm_fill("mean", title = "LISA class") +
+  tm_borders(alpha = 0.4) +
+  tm_layout(main.title = "LISA map of drug cases 2020", main.title.size = 1)
+
+map_2021 <- tm_shape(lisa_list[["2021"]]) +
+  tm_polygons() + 
+  tm_borders(alpha = 0.5) + 
+  tm_shape(lisa2021_sig) + 
+  tm_fill("mean", title = "LISA class") +
+  tm_borders(alpha = 0.4) +
+  tm_layout(main.title = "LISA map of drug cases 2021", main.title.size = 1)
+
+map_2022 <- tm_shape(lisa_list[["2022"]]) +
+  tm_polygons() + 
+  tm_borders(alpha = 0.5) + 
+  tm_shape(lisa2022_sig) + 
+  tm_fill("mean", title = "LISA class") +
+  tm_borders(alpha = 0.4) +
+  tm_layout(main.title = "LISA map of drug cases 2022", main.title.size = 1)
+
+tmap_mode("plot")
+tmap_arrange(map_2017, map_2018, map_2019, map_2020, map_2021, map_2022, ncol = 3)
+```
+
+-   **High-Low Outliers:** Interestingly this only occurs for the year 2017, 2018 and 2020. And are generally found near low-low class
+
+-   **Low-High Outliers**: Most of the province classified under this are situated near the central south of Thailand which is near the tourist area and also the very southern region. And for 2022 its actually in the northern eastern region.
+
+-   **High-High Clusters**: There is an absence of any high-high classification, suggest that there are no high-value province surrounded by high-value province
+
+-   **Low-Low Clusters**: Many of the provinces classified here are actually found in the western part of Thailand which is somewhat near the tourist area of Bangkok where there are low-high outliers.
+
+## Emerging Hot Spot Analysis
+
+### Calculating the local Gi\*
+
+Emerging hot spot Analysis (EHSA) is a technique that falls under exploratory spatial data analysis (ESDA). It combines the traditional ESDA technique of hot spot analysis using the Getis-Ord Gi\* statistic with the traditional time-series Mann-Kendall test for monotonic trends.
+
+The goal of EHSA is to evaluate how hot and cold spots are changing over time. It helps us answer the questions: are they becoming increasingly hotter, are they cooling down, or are they staying the same?
+
+In brief, EHSA works by calculating the Gi\* for each time period. The series of Gi\* at each location is treated as a time-series and evaluated for a trend using the Mann-Kendall statistic. The Gi\* and the Mann-Kendall are compared together to create 17 unique classifications to help better understand how the locations have changed over time.
+
+First we create a neighbor list ensuring that the self is included and then create the weights list from the new neighbors list. Let's do this for the year 2017 only
+
+```{r}
+#| eval: false
+wm_idw_2017 <- drug[["2017"]] %>%
+    mutate(nb = include_self(st_contiguity(geometry)),
+           wt = st_inverse_distance(nb, geometry,
+                                   scale = 1,
+                                   alpha = 1),
+           .before = 1)
+```
+
+Before we forget let's write the *wm_idw_2017* into an rds file for faster access
+
+```{r}
+#| eval: false
+write_rds(wm_idw_2017, "data/rds/wm_idw_2017.rds")
+```
+
+```{r}
+#| echo: false
+wm_idw_2017 <- read_rds("data/rds/wm_idw_2017.rds")
+```
+
+Following, we calculate the local Gi\* using [`local_gstar_perm()`](https://sfdep.josiahparry.com/reference/local_gstar) on the `no_cases` column which creates a new data frame column called `gi_star`. We then unnest it using [`tidyr::unnest()`](https://tidyr.tidyverse.org/reference/unnest.html).
+
+```{r}
+cases_gistar_2017 <- wm_idw_2017 %>% 
+  transmute(gi_star = local_gstar_perm(no_cases, nb, wt, nsim = 199)) %>% 
+  tidyr::unnest(gi_star)
+```
+
+```{r}
+#| echo: false
+wm_idw_2017 <- read_rds("data/rds/wm_idw_2017.rds")
+```
+
+Lastly, we classify the clusters using a combination of [`mutate()`](https://dplyr.tidyverse.org/reference/mutate.html) and [`case_when()`](https://dplyr.tidyverse.org/reference/case_when.html) which is then piped into a ggplot map. While not a perfect recreation of the GeoDa map, it is very close—the differences likely due to conditional permutation (see [conditional permutation vignette](https://sfdep.josiahparry.com/articles/conditional-permutation) for more on significance calculation).
+
+```{r}
+cases_gistar_2017 %>% 
+  mutate(cluster = case_when(
+    p_folded_sim > 0.05 ~ "Not Significant",
+    p_folded_sim <= 0.05 & gi_star < 0 ~ "Low",
+    p_folded_sim <= 0.05 & gi_star > 0 ~ "High"
+  )) |> 
+  ggplot(aes(fill = cluster)) +
+  geom_sf(lwd = 0.2, color = "black") +
+  scale_fill_manual(values = c("High" = "red",
+                               "Low" = "Blue", 
+                               "Not Significant" = "white")) +
+  theme_void()
+```
+
+Indeed the High cluster and low cluster is similar to what we see in our LISA map.
+
+## Conclusion
+
+This take home exercise has taught me about spatial autocorrelation and how although something looks one way. The values calculated could mean some sort statistical significance. This take home also taught me how to be cautious and that the data set provided only is not always ready to use when downloaded shown by the spelling error.
+
+As for the actual data itself, it shows that there are certain hotspots for the drug abuses and how it affects neighbouring provinces. But it also does not necessarily stay there throughout for all 6 years but it shifts around. This could be that they are trying to avoid the police and trying to relocate so that they are harder to track but who knows. However it is still unclear on how the drug cases arise as the provinces that it appears on is rather random. As seen from the provinces that drug cases arises from 2020-2022
