@@ -803,6 +803,140 @@ cases_gistar_2017 %>%
 
 Indeed the High cluster and low cluster is similar to what we see in our LISA map.
 
+### Performing Emerging Hot Spot Analysis
+
+While we can do the calculations manually as above, this is limited in two ways. Primarily that in the above example we used spatial neighbors only. Whereas in EHSA we can—and likely should—incorporate the time-lag of our spatial neighbors. Secondly, there are classifications proposed by ESRI which help us understand how each location is changing over time. Both of these are handled by the emerging_hotspot_analysis() function.
+
+This emerging_hotspot_analysis() takes a spacetime object x, and the quoted name of the variable of interested in .var at minimum. We can specify the number of time lags using the argument k which is set to 1 by default.
+
+For this let's create a st_data without the geometry and only doing it for the drug_use cases
+
+```{r}
+drug_offenses <- c(
+  "drug_use_cases"
+)
+
+thai_df <- thai %>% filter(types_of_drug_offenses %in% drug_offenses )
+thai_df <- thai_df %>%
+  select(fiscal_year, no_cases, ADM1_EN) %>%
+  st_drop_geometry()
+```
+
+Next is to create a spacetime object
+
+```{r}
+thai_spt <- spacetime(thai_df, thai_sf,
+                 .loc_col = "ADM1_EN",
+                 .time_col = "fiscal_year")
+```
+
+Let's check if it is indeed a spacetime object
+
+```{r}
+is_spacetime_cube(thai_spt)
+```
+
+Lastly, we will perform EHSA analysis by using [`emerging_hotspot_analysis()`](https://sfdep.josiahparry.com/reference/emerging_hotspot_analysis.html) of sfdep package. It takes a spacetime object `thai_spt`, and the name of the variable of interest `no_cases` for .var argument.
+
+```{r}
+ehsa <- emerging_hotspot_analysis(
+  x = thai_spt, 
+  .var = "no_cases", 
+  k = 1, 
+  nsim = 99
+)
+```
+
+We can then join them together
+
+```{r}
+ehsa_sf <- left_join(thai_sf, ehsa, by = c("ADM1_EN" = "location"))
+```
+
+### Visualising Distribution of EHSA
+
+We can use a bar graph to show the distribution of the EHSA class
+
+```{r}
+ggplot(data = ehsa,
+       aes(y = classification,fill = classification)) +
+  geom_bar(show.legend = FALSE)
+```
+
+There are a total of 5 distinct hotspot and coldspot classes. For hotspot we have **sporadic** **hotspot, oscilating hotspot, new hotspot**. For cold we have **sporadic coldspot, new coldspot**.
+
+### Plotting of Tau, Classification and p-value
+
+```{r}
+e_p <- tm_shape(ehsa_sf) +
+  tm_fill("p_value", palette = "Purples") + 
+  tm_borders(alpha=0.5) +
+  tm_view(set.zoom.limits = c(6,8)) +
+  tm_layout(main.title = "EHSA p-value", main.title.size = 1)
+
+e_c <- tm_shape(ehsa_sf) +
+  tm_fill("classification", palette = "Spectral") + 
+  tm_borders(alpha=0.5) +
+  tm_view(set.zoom.limits = c(6,8)) +
+  tm_layout(main.title = "EHSA Classification", main.title.size = 1)
+
+e_t <- tm_shape(ehsa_sf) +
+  tm_fill("tau") + 
+  tm_borders(alpha=0.5) +
+  tm_view(set.zoom.limits = c(6,8)) +
+  tm_layout(main.title = "EHSA tau-value", main.title.size = 1)
+
+tmap_arrange(e_t, e_c, e_p, ncol = 3)
+```
+
+### Plotting emerging Hotspot and Coldspot
+
+```{r}
+ehsa_sf_cold <- ehsa_sf %>% filter(classification %in% c("sporadic coldspot","new coldspot"))
+
+ehsa_sf_hot <- ehsa_sf %>% filter(classification %in% c("sporadic hotspot","oscilating hotspot", "new hotspot"))
+```
+
+### **Emerging Hotspots of Drug Use Cases**
+
+```{r}
+tmap_mode("plot")  
+tm_shape(ehsa_sf)+
+  tm_polygons()+
+  tm_borders(col = "black", alpha = 0.6)+
+tm_shape(ehsa_sf_hot)+
+  tm_fill("classification", 
+          palette = c("#de573e","#f67774","#f8b675","#f8d673"),
+          title = "classification",
+          midpoint = 0) +
+  tm_borders(col = "black", alpha = 0.6)+
+  tm_layout(main.title = "Emerging Hotspots of Drug Cases") +
+  tm_borders(alpha = 0.5) +
+  tm_scale_bar(position=c("LEFT", "BOTTOM"), text.size=1.2) +
+  tm_grid(labels.size = 1,alpha =0.2)
+```
+
+### **Emerging Coldspots of Drug Use Cases**
+
+```{r}
+tmap_mode("plot")  
+tm_shape(ehsa_sf)+
+  tm_polygons()+
+  tm_borders(col = "black", alpha = 0.6)+
+tm_shape(ehsa_sf_cold)+
+  tm_fill("classification", 
+          palette = c("#57bfc0","#7977f3"),
+          title = "classification",
+          midpoint = 0) +
+  tm_borders(col = "black", alpha = 0.6)+
+  tm_layout(main.title = "Emerging Coldspots of Drug Cases") +
+  tm_borders(alpha = 0.5) +
+  tm_scale_bar(position=c("LEFT", "BOTTOM"), text.size=1.2) +
+  tm_grid(labels.size = 1,alpha =0.2)
+```
+
+Although it is not a 1 to 1 comparison of the data we have as we only did drug_use_cases here. It does give some insight to the potential provinces which could have high value of drug_use_cases that could potential influence neighbouring provinces to have a high value. It also give provinces with low value of drug_use_cases, which may or may not influence nearby provinces or just disappear altogether
+
 ## Conclusion
 
 This take home exercise has taught me about spatial autocorrelation and how although something looks one way. The values calculated could mean some sort statistical significance. This take home also taught me how to be cautious and that the data set provided only is not always ready to use when downloaded shown by the spelling error.
