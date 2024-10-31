@@ -18,7 +18,7 @@ In this take-home my aim is to evaluate the necessary R packages necessary to pe
 
 -   Local Measures of Spatial Autocorrelation
 
-This is to be on the data which is the different types of crimes in Malaysia on the district level which we would layer with income inequality of Malaysia.
+This is to be done on the data which is the different types of crimes in Malaysia on the district level which we would layer with income inequality of Malaysia.
 
 This also serves to prototype the Shiny application UI and choosing the right type of components
 
@@ -125,3 +125,244 @@ Given that I am working with LISA maps and that having a comparison between two 
 This would also be roughly how our shiny application would look like with the different layouts
 
 ## Data Wrangling
+
+Looking at the crime csv file there are rows with "all" or "All" as the data. This seems to be a summary of the different crimes or summary for the different districts for the different years. So let's remove the them
+
+```{r}
+excluded_column <- "date"
+crime <- crime[!apply(crime[, !names(crime) %in% excluded_column] == "all", 1, any), ]
+crime <- crime[!apply(crime[, !names(crime) %in% excluded_column] == "All", 1, any), ]
+```
+
+Let's load Malaysia shape file and transform the crs into Malaysia
+
+```{r}
+msia_sf <- read_sf(dsn = "data/geospatial/mys_adm_unhcr_20210211_shp", 
+                 layer = "mys_admbnda_adm2_unhcr_20210211") %>%
+  st_as_sf(coords =c(
+    "longitude", "latitude"),
+           crs = 4326) %>%
+  st_transform(crs = 3168)
+```
+
+```{r}
+st_crs(msia_sf)
+```
+
+### Hole in boundary file
+
+Next check if there are any holes with the boundary file
+
+```{r}
+u_msia <- st_union(msia_sf)
+plot(u_msia)
+```
+
+### Missing row
+
+Let's do a check if there are any missing values in the crime data
+
+```{r}
+na <- crime %>%
+  summarise(na_district = sum(is.na(district)),
+            na_category = sum(is.na(category)),
+            na_type = sum(is.na(type)),
+            na_date = sum(is.na(date)),
+            na_crimes = sum(is.na(crimes))
+            )
+print(na)
+```
+
+Let's also do a check for the income inequality data
+
+```{r}
+na <- income %>%
+  summarise(na_district = sum(is.na(district)),
+            na_date = sum(is.na(date)),
+            na_gini = sum(is.na(gini))
+            )
+print(na)
+```
+
+### Left Join
+
+Having check everything else, let's check whether is there any issues with ***msia_sf*** and ***crime***
+
+```{r}
+#| eval: false
+combined_data <- bind_cols(crime = sort(unique(crime$district)), msia_sf = sort(unique(msia_sf$ADM2_EN)))
+
+# Create a new column to compare the values
+combined_data <- combined_data %>%
+  mutate(same_values = crime == msia_sf) %>% filter(same_values == FALSE)
+
+# View the result
+combined_data
+```
+
+This would generate an error regarding difference in the number of data, in the ***crime*** there are 159 districts while in ***msia_sf*** there are 144 districts.
+
+Let's run another code to see the difference
+
+```{r}
+crime_unique <- data.frame(district = sort(unique(crime$district)))
+msia_unique <- data.frame(ADM2_EN = sort(unique(msia_sf$ADM2_EN)))
+
+# Find rows in crime_unique that don't have a match in msia_unique
+unmatched_crime <- anti_join(crime_unique, msia_unique, by = c("district" = "ADM2_EN"))
+
+# Find rows in msia_unique that don't have a match in crime_unique
+unmatched_msia <- anti_join(msia_unique, crime_unique, by = c("ADM2_EN" = "district"))
+
+# Combine results to see all mismatches
+
+unmatched_crime
+unmatched_msia
+```
+
+From here we can actually see which data is missing in which file
+
+Let's see all the unique districts in the sf file
+
+```{r}
+sort(unique(msia_sf$ADM2_EN))
+```
+
+From here there is no easy way to fix this but to google the districts mentioned in crime and try to map it as close as close to the district in the sf file
+
+```{r}
+crime <- crime %>%
+  mutate(district = recode(district,
+                           # Johor Bahru mappings
+                           "Iskandar Puteri" = "Johor Bahru",
+                           "Nusajaya" = "Johor Bahru",
+                           "Johor Bahru Selatan" = "Johor Bahru",
+                           "Johor Bahru Utara" = "Johor Bahru",
+                           "Seri Alam" = "Johor Bahru",
+                           
+                           # Bandar Baharu correction
+                           "Bandar Bharu" = "Bandar Baharu",
+                           
+                           # WP Kuala Lumpur mappings
+                           "Brickfields" = "WP. Kuala Lumpur",
+                           "Cheras" = "WP. Kuala Lumpur",
+                           "Dang Wangi" = "WP. Kuala Lumpur",
+                           "Sentul" = "WP. Kuala Lumpur",
+                           "Wangsa Maju" = "WP. Kuala Lumpur",
+                           
+                           # Seremban correction
+                           "Nilai" = "Seremban",
+                           
+                           # Seberang Perai corrections
+                           "Seberang Perai Selatan" = "S.P. Selatan",
+                           "Seberang Perai Tengah" = "S.P. Tengah",
+                           "Seberang Perai Utara" = "S.P. Utara",
+                           
+                           # Cameron Highlands correction
+                           "Cameron Highland" = "Cameron Highlands",
+                           
+                           # Lipis correction
+                           "Kuala Lipis" = "Lipis",
+                           
+                           # Kinta mappings
+                           "Batu Gajah" = "Kinta",
+                           "Ipoh" = "Kinta",
+                           
+                           # Ulu Perak mappings
+                           "Gerik" = "Ulu Perak",
+                           "Pengkalan Hulu" = "Ulu Perak",
+      
+                           
+                           # Manjung correction
+                           "Manjung" = "Manjung (Dinding)",
+                           
+                           # Larut Dan Matang mappings
+                           "Selama" = "Larut Dan Matang",
+                           "Taiping" = "Larut Dan Matang",
+                           
+                           # Kuala Kangsar correction
+                           "Sungai Siput" = "Kuala Kangsar",
+                           
+                           # Batang Padang mappings
+                           "Tanjong Malim" = "Batang Padang",
+                           "Tapah" = "Batang Padang",
+                           
+                           # Perlis mappings
+                           "Arau" = "Perlis",
+                           "Kangar" = "Perlis",
+                           "Padang Besar" = "Perlis",
+                           
+                           # Kinabatangan correction
+                           "Kota Kinabatangan" = "Kinabatangan",
+                           
+                           # Samarahan correction
+                           "Kota Samarahan" = "Samarahan",
+                           
+                           # Mukah correction
+                           "Matu Daro" = "Mukah",
+                           
+                           # Kuching correction
+                           "Padawan" = "Kuching",
+                           
+                           # Gombak correction
+                           "Ampang Jaya" = "Gombak",
+                           
+                           # Ulu Langat correction
+                           "Kajang" = "Ulu Langat",
+                           
+                           # Ulu Selangor correction
+                           "Hulu Selangor" = "Ulu Selangor",
+                           
+                           # Klang mappings
+                           "Klang Selatan" = "Klang",
+                           "Klang Utara" = "Klang",
+                           
+                           # Petaling mappings
+                           "Petaling Jaya" = "Petaling",
+                           "Serdang" = "Petaling",
+                           "Sg. Buloh" = "Petaling",
+                           "Shah Alam" = "Petaling",
+                           "Subang Jaya" = "Petaling",
+                           "Sungai Buloh" = "Petaling",
+                           
+                           # Default to keep original name if no match
+                           .default = district))
+```
+
+let's check again to see if altered the data correctly
+
+```{r}
+crime_unique <- data.frame(district = sort(unique(crime$district)))
+
+# Find rows in crime_unique that don't have a match in msia_unique
+unmatched_crime <- anti_join(crime_unique, msia_unique, by = c("district" = "ADM2_EN"))
+
+unmatched_crime
+```
+
+We are still having trouble with Seberang Perai Selatan. For this we would need to use ***case_when()***
+
+```{r}
+crime <- crime %>%
+  mutate(district = case_when(
+    state == "Pulau Pinang" & district == "S.P. Selatan" ~ "S.P.Selatan",
+    TRUE ~ district
+  ))
+```
+
+Let's check it again
+
+```{r}
+crime_unique <- data.frame(district = sort(unique(crime$district)))
+
+# Find rows in crime_unique that don't have a match in msia_unique
+unmatched_crime <- anti_join(crime_unique, msia_unique, by = c("district" = "ADM2_EN"))
+
+unmatched_crime
+```
+
+Finally we can left join it
+
+```{r}
+msia <- left_join(msia_sf,crime, by = c("ADM2_EN" = "district"))
+```
