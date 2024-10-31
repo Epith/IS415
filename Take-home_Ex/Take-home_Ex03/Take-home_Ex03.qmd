@@ -1,0 +1,127 @@
+---
+title: "Take-Home Exercise 3"
+author: "Kwee Cheng"
+date: "October 31, 2024"
+date-modified: "last-modified"
+execute: 
+  eval: true
+  echo: true
+  freeze: true
+categories: [Take-Home, Code]
+---
+
+## **Overview and Objectives**
+
+In this take-home my aim is to evaluate the necessary R packages necessary to perform:
+
+-   Global Measures of Spatial Autocorrelation
+
+-   Local Measures of Spatial Autocorrelation
+
+This is to be on the data which is the different types of crimes in Malaysia on the district level which we would layer with income inequality of Malaysia.
+
+This also serves to prototype the Shiny application UI and choosing the right type of components
+
+## Data
+
+-   **Income Inequality Data:** Household income inequality by district (<https://data.gov.my/data-catalogue/hh_inequality_district>)
+
+-   **Crime Data:** Crime rates by district (<https://data.gov.my/data-catalogue/crime_district>)
+
+-   Insert Boundary Link
+
+## Packages
+
+-   **sf** provides a standardised way to work with spatial vector data (points, lines, polygons)
+
+-   **spdep** focuses on spatial econometrics and spatial statistics
+
+-   **tmap** create thematic maps
+
+-   **tidyverse** for easy data manipulation and some visualisation
+
+-   **knitr** facilitates the integration of R code and documentation in reproducible research reports
+
+```{r}
+pacman::p_load(sf, sfdep, tmap, tidyverse, knitr)
+```
+
+## Importing the Data
+
+Before the UI prototyping can be done let's see what type of data we are dealing with so that we can better plan for the UI components to be used
+
+Let's import the crime dataset
+
+```{r}
+crime <- read_csv("data/aspatial/crime_district.csv")
+```
+
+Let's import the income inequality as well
+
+```{r}
+income <- read_csv("data/aspatial/hh_inequality.csv")
+```
+
+```{r}
+crime
+```
+
+From here we can identify some of the variables that we can use, that the user can interact with ***district, category, type, date, crimes***
+
+```{r}
+income
+```
+
+Likewise for income we have ***district, date, gini***
+
+## UI Design
+
+For a shiny application in this course we work with three main components **`headerPanel`**, **`sidebarPanel`**, and **`mainPanel`**.
+
+-   **Header Panel** : This is the topmost part of the UI where we can put a description of the application or have a navbar where you can navigate different pages. Each page leads to other group members work/part in this project
+
+-   **Sidebar Panel**: This panel would mainly consist of the input controls that the user can play around with to change the map output in the **Main Panel.**
+
+-   **Main Panel** : This is the primary area of the application and it typically contains outputs. The main panel displays the output (like maps, plots, tables, etc.) based on the input given in the sidebar panel.
+
+![](images/clipboard-3154485869.png)
+
+### Header Panel
+
+For this we would like to put **navbarPage()** which shiny provides. This is so as to keep our project organised and it would be easier to navigate through the different pages that we would have
+
+![](images/clipboard-4240030914.png)
+
+### Side Panel
+
+For this part it would be the input controls and given the potential variables the the data type we have identified: ***district, category, type, date, crimes, gini.***
+
+Some of the potential input controls that could be used are:
+
+![](images/clipboard-3620315000.png){width="414"}
+
+![](images/clipboard-2234524494.png)
+
+![](images/clipboard-2052511263.png){width="430"}
+
+![](images/clipboard-1621641194.png){width="401"}
+
+![](images/clipboard-3092468463.png){width="274"}
+
+![](images/clipboard-2079632102.png)
+
+![](images/clipboard-2775147435.png)
+
+Something that our side panel that could look like given the variables that we are given:
+
+![](images/clipboard-1116187746.png)
+
+### Main Panel
+
+Given that I am working with LISA maps and that having a comparison between two maps would be helpful for the user to visualise.
+
+![](images/clipboard-1619717407.png)
+
+This would also be roughly how our shiny application would look like with the different layouts
+
+## Data Wrangling
