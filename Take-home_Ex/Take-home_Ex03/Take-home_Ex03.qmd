@@ -26,6 +26,8 @@ This also serves to prototype the Shiny application UI and choosing the right ty
 
 -   **Income Inequality Data:** Household income inequality by district (<https://data.gov.my/data-catalogue/hh_inequality_district>)
 
+-   **Annual Principal Labour Force Statistics by District:** Annual principal labour force statistics including unemployment and participation rates (<https://data.gov.my/data-catalogue/lfs_district>)
+
 -   **Crime Data:** Crime rates by district (<https://data.gov.my/data-catalogue/crime_district>)
 
 -   **Malaysia - Subnational Administrative Boundaries: (**<https://data.humdata.org/dataset/cod-ab-mys?>)
@@ -62,6 +64,12 @@ Let's import the income inequality as well
 income <- read_csv("data/aspatial/hh_inequality.csv")
 ```
 
+Also import the annual principal labour force statistics
+
+```{r}
+labour <- read_csv("data/aspatial/lfs_district.csv")
+```
+
 ```{r}
 crime
 ```
@@ -73,6 +81,12 @@ income
 ```
 
 Likewise for income we have ***district, date, gini***
+
+```{r}
+labour
+```
+
+For labour we have ***district, date, lf, lf_employed, lf_unemployed, lf_outside, p_rate, u_rate, ep_ration***
 
 ## UI Design
 
@@ -134,6 +148,19 @@ crime <- crime[!apply(crime[, !names(crime) %in% excluded_column] == "all", 1, a
 crime <- crime[!apply(crime[, !names(crime) %in% excluded_column] == "All", 1, any), ]
 ```
 
+Let's also add a column called year to the different csv files, to that it would be easier to split up the data into the different years
+
+```{r}
+crime <- crime %>%
+              mutate(year = year(date))
+
+income <- income %>%
+              mutate(year = year(date))
+
+labour <- labour %>%
+              mutate(year = year(date))
+```
+
 Let's load Malaysia shape file and transform the crs into Malaysia
 
 ```{r}
@@ -184,7 +211,22 @@ na <- income %>%
 print(na)
 ```
 
+And also for the labour data
+
+```{r}
+na <- labour %>%
+  summarise(na_district = sum(is.na(district)),
+            na_date = sum(is.na(date)),
+            na_lf = sum(is.na(lf)),
+            na_lf_unemployed = sum(is.na(lf_unemployed)),
+            na_u_rate = sum(is.na(u_rate)),
+            )
+print(na)
+```
+
 ### Left Join
+
+#### Mismatch Districts
 
 Having check everything else, let's check whether is there any issues with ***msia_sf*** and ***crime***
 
@@ -340,8 +382,74 @@ unmatched_crime <- anti_join(crime_unique, msia_unique, by = c("district" = "ADM
 unmatched_crime
 ```
 
-Finally we can left join it
+As we plan to overlay with the labour data, let's do checks for that as well
 
 ```{r}
-msia <- left_join(msia_sf,crime, by = c("ADM2_EN" = "district"))
+labour_unique <- data.frame(district = sort(unique(labour$district)))
+msia_unique <- data.frame(ADM2_EN = sort(unique(msia_sf$ADM2_EN)))
+
+# Find rows in crime_unique that don't have a match in msia_unique
+unmatched_labour <- anti_join(labour_unique, msia_unique, by = c("district" = "ADM2_EN"))
+
+# Find rows in msia_unique that don't have a match in crime_unique
+unmatched_msia <- anti_join(msia_unique, labour_unique, by = c("ADM2_EN" = "district"))
+
+# Combine results to see all mismatches
+
+unmatched_labour
+unmatched_msia
+```
+
+Let's change the districts in *labour* like what we did for *crime*
+
+```{r}
+labour <- labour %>%
+  mutate(district = recode(district,
+                           "Kulai" = "Kulaijaya",
+                           # Seberang Perai corrections
+                           "Seberang Perai Selatan" = "S.P.Selatan",
+                           "Seberang Perai Tengah" = "S.P. Tengah",
+                           "Seberang Perai Utara" = "S.P. Utara",
+                           
+                           # Ulu Perak mappings
+                           "Hulu Perak" = "Ulu Perak",
+                           
+                           # Manjung correction
+                           "Manjung" = "Manjung (Dinding)",
+                           
+                           "Maradong" = "Meradong",
+                           "Tangkak" = "Ledang",
+                           
+                           # Default to keep original name if no match
+                           .default = district))
+```
+
+Let's check if there are still any issues with the district for *labour*
+
+```{r}
+labour_unique <- data.frame(district = sort(unique(labour$district)))
+msia_unique <- data.frame(ADM2_EN = sort(unique(msia_sf$ADM2_EN)))
+
+# Find rows in crime_unique that don't have a match in msia_unique
+unmatched_labour <- anti_join(labour_unique, msia_unique, by = c("district" = "ADM2_EN"))
+
+unmatched_labour
+```
+
+Let's combine our labour data with our crimes data
+
+```{r}
+crime_labour <- crime %>%
+        filter(year >= 2019 & year <= 2022) %>%
+        left_join(labour, by = c("district","year")) %>%
+        select(1:4,6,7,10,12,15)
+```
+
+Next combine it with our *msia_sf*
+
+```{r}
+msia <- left_join(msia_sf,crime_labour, by = c("ADM2_EN" = "district")) %>%
+        select(1,6,16:23)
+
+msia
 ```
