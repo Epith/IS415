@@ -321,7 +321,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ul>
 <li><p><strong>Income Inequality Data:</strong> Household income inequality by district (<a href="https://data.gov.my/data-catalogue/hh_inequality_district" class="uri">https://data.gov.my/data-catalogue/hh_inequality_district</a>)</p></li>
 <li><p><strong>Crime Data:</strong> Crime rates by district (<a href="https://data.gov.my/data-catalogue/crime_district" class="uri">https://data.gov.my/data-catalogue/crime_district</a>)</p></li>
-<li><p>Insert Boundary Link</p></li>
+<li><p><strong>Malaysia - Subnational Administrative Boundaries: (</strong><a href="https://data.humdata.org/dataset/cod-ab-mys?" class="uri">https://data.humdata.org/dataset/cod-ab-mys?</a>)</p></li>
 </ul>
 </section>
 <section id="packages" class="level2">
@@ -756,7 +756,7 @@ PROJCRS["Kertau (RSO) / RSO Malaya (m)",
 <span id="cb26-21"><a href="#cb26-21" aria-hidden="true" tabindex="-1"></a>                           <span class="st">"Nilai"</span> <span class="ot">=</span> <span class="st">"Seremban"</span>,</span>
 <span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a>                           </span>
 <span id="cb26-23"><a href="#cb26-23" aria-hidden="true" tabindex="-1"></a>                           <span class="co"># Seberang Perai corrections</span></span>
-<span id="cb26-24"><a href="#cb26-24" aria-hidden="true" tabindex="-1"></a>                           <span class="st">"Seberang Perai Selatan"</span> <span class="ot">=</span> <span class="st">"S.P. Selatan"</span>,</span>
+<span id="cb26-24"><a href="#cb26-24" aria-hidden="true" tabindex="-1"></a>                           <span class="st">"Seberang Perai Selatan"</span> <span class="ot">=</span> <span class="st">"S.P.Selatan"</span>,</span>
 <span id="cb26-25"><a href="#cb26-25" aria-hidden="true" tabindex="-1"></a>                           <span class="st">"Seberang Perai Tengah"</span> <span class="ot">=</span> <span class="st">"S.P. Tengah"</span>,</span>
 <span id="cb26-26"><a href="#cb26-26" aria-hidden="true" tabindex="-1"></a>                           <span class="st">"Seberang Perai Utara"</span> <span class="ot">=</span> <span class="st">"S.P. Utara"</span>,</span>
 <span id="cb26-27"><a href="#cb26-27" aria-hidden="true" tabindex="-1"></a>                           </span>
@@ -839,34 +839,13 @@ PROJCRS["Kertau (RSO) / RSO Malaya (m)",
 <span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>unmatched_crime</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>      district
-1 S.P. Selatan</code></pre>
-</div>
-</div>
-<p>We are still having trouble with Seberang Perai Selatan. For this we would need to use <strong><em>case_when()</em></strong></p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>crime <span class="ot">&lt;-</span> crime <span class="sc">%&gt;%</span></span>
-<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">district =</span> <span class="fu">case_when</span>(</span>
-<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>    state <span class="sc">==</span> <span class="st">"Pulau Pinang"</span> <span class="sc">&amp;</span> district <span class="sc">==</span> <span class="st">"S.P. Selatan"</span> <span class="sc">~</span> <span class="st">"S.P.Selatan"</span>,</span>
-<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> district</span>
-<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>  ))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>Let’s check it again</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>crime_unique <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">district =</span> <span class="fu">sort</span>(<span class="fu">unique</span>(crime<span class="sc">$</span>district)))</span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Find rows in crime_unique that don't have a match in msia_unique</span></span>
-<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>unmatched_crime <span class="ot">&lt;-</span> <span class="fu">anti_join</span>(crime_unique, msia_unique, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"district"</span> <span class="ot">=</span> <span class="st">"ADM2_EN"</span>))</span>
-<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>unmatched_crime</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
 <pre><code>[1] district
 &lt;0 rows&gt; (or 0-length row.names)</code></pre>
 </div>
 </div>
 <p>Finally we can left join it</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>msia <span class="ot">&lt;-</span> <span class="fu">left_join</span>(msia_sf,crime, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"ADM2_EN"</span> <span class="ot">=</span> <span class="st">"district"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>msia <span class="ot">&lt;-</span> <span class="fu">left_join</span>(msia_sf,crime, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"ADM2_EN"</span> <span class="ot">=</span> <span class="st">"district"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 
 

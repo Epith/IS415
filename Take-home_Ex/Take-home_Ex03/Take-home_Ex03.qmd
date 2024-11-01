@@ -28,7 +28,7 @@ This also serves to prototype the Shiny application UI and choosing the right ty
 
 -   **Crime Data:** Crime rates by district (<https://data.gov.my/data-catalogue/crime_district>)
 
--   Insert Boundary Link
+-   **Malaysia - Subnational Administrative Boundaries: (**<https://data.humdata.org/dataset/cod-ab-mys?>)
 
 ## Packages
 
@@ -254,7 +254,7 @@ crime <- crime %>%
                            "Nilai" = "Seremban",
                            
                            # Seberang Perai corrections
-                           "Seberang Perai Selatan" = "S.P. Selatan",
+                           "Seberang Perai Selatan" = "S.P.Selatan",
                            "Seberang Perai Tengah" = "S.P. Tengah",
                            "Seberang Perai Utara" = "S.P. Utara",
                            
@@ -330,27 +330,6 @@ crime <- crime %>%
 ```
 
 let's check again to see if altered the data correctly
-
-```{r}
-crime_unique <- data.frame(district = sort(unique(crime$district)))
-
-# Find rows in crime_unique that don't have a match in msia_unique
-unmatched_crime <- anti_join(crime_unique, msia_unique, by = c("district" = "ADM2_EN"))
-
-unmatched_crime
-```
-
-We are still having trouble with Seberang Perai Selatan. For this we would need to use ***case_when()***
-
-```{r}
-crime <- crime %>%
-  mutate(district = case_when(
-    state == "Pulau Pinang" & district == "S.P. Selatan" ~ "S.P.Selatan",
-    TRUE ~ district
-  ))
-```
-
-Let's check it again
 
 ```{r}
 crime_unique <- data.frame(district = sort(unique(crime$district)))
