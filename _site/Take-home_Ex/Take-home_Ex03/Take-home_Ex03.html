@@ -259,6 +259,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#missing-row" id="toc-missing-row" class="nav-link" data-scroll-target="#missing-row">Missing row</a></li>
   <li><a href="#left-join" id="toc-left-join" class="nav-link" data-scroll-target="#left-join">Left Join</a></li>
   </ul></li>
+  <li><a href="#global-measures-of-spatial-autocorrelation" id="toc-global-measures-of-spatial-autocorrelation" class="nav-link" data-scroll-target="#global-measures-of-spatial-autocorrelation"><strong>Global Measures of Spatial Autocorrelation</strong></a>
+  <ul class="collapse">
+  <li><a href="#calculating-neighbours-and-weights" id="toc-calculating-neighbours-and-weights" class="nav-link" data-scroll-target="#calculating-neighbours-and-weights"><strong>Calculating Neighbours and Weights</strong></a></li>
+  <li><a href="#computing-row-standardised-weight-matrix" id="toc-computing-row-standardised-weight-matrix" class="nav-link" data-scroll-target="#computing-row-standardised-weight-matrix"><strong>Computing Row-Standardised Weight Matrix</strong></a></li>
+  <li><a href="#global-morans-i-test" id="toc-global-morans-i-test" class="nav-link" data-scroll-target="#global-morans-i-test"><strong>Global Moran’s I Test</strong></a></li>
+  <li><a href="#global-morans-i-permutation-test" id="toc-global-morans-i-permutation-test" class="nav-link" data-scroll-target="#global-morans-i-permutation-test"><strong>Global Moran’s</strong> I permutation test</a></li>
+  </ul></li>
+  <li><a href="#local-moran-i" id="toc-local-moran-i" class="nav-link" data-scroll-target="#local-moran-i">Local Moran I</a>
+  <ul class="collapse">
+  <li><a href="#calculating-local-moran-i" id="toc-calculating-local-moran-i" class="nav-link" data-scroll-target="#calculating-local-moran-i">Calculating Local Moran I</a></li>
+  <li><a href="#visualising-local-moran-i" id="toc-visualising-local-moran-i" class="nav-link" data-scroll-target="#visualising-local-moran-i">Visualising Local Moran I</a></li>
+  <li><a href="#lisa" id="toc-lisa" class="nav-link" data-scroll-target="#lisa">LISA</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -295,7 +308,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">November 1, 2024</p>
+      <p class="date-modified">November 2, 2024</p>
     </div>
   </div>
     
@@ -995,19 +1008,65 @@ PROJCRS["Kertau (RSO) / RSO Malaya (m)",
 <span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>        <span class="fu">left_join</span>(labour, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"district"</span>,<span class="st">"year"</span>)) <span class="sc">%&gt;%</span></span>
 <span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">select</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>,<span class="dv">6</span>,<span class="dv">7</span>,<span class="dv">10</span>,<span class="dv">12</span>,<span class="dv">15</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Next combine it with our <em>msia_sf</em></p>
+<p>Let’s check for any empty rows before <em>left_join</em></p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>msia <span class="ot">&lt;-</span> <span class="fu">left_join</span>(msia_sf,crime_labour, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"ADM2_EN"</span> <span class="ot">=</span> <span class="st">"district"</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>        <span class="fu">select</span>(<span class="dv">1</span>,<span class="dv">6</span>,<span class="dv">16</span><span class="sc">:</span><span class="dv">23</span>)</span>
-<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>msia</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>na <span class="ot">&lt;-</span> crime_labour <span class="sc">%&gt;%</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">na_district =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(district)),</span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_category =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(category)),</span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_type =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(type)),</span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_crimes =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(crimes)),</span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_year =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(year)),</span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_lf =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(lf)),</span>
+<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_lf_unemployed =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(lf_unemployed)),</span>
+<span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_u_rate =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(u_rate)),</span>
+<span id="cb44-10"><a href="#cb44-10" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb44-11"><a href="#cb44-11" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(na)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Simple feature collection with 7500 features and 10 fields
+<pre><code># A tibble: 1 × 8
+  na_district na_category na_type na_crimes na_year na_lf na_lf_unemployed
+        &lt;int&gt;       &lt;int&gt;   &lt;int&gt;     &lt;int&gt;   &lt;int&gt; &lt;int&gt;            &lt;int&gt;
+1           0           0       0         0       0   480              480
+# ℹ 1 more variable: na_u_rate &lt;int&gt;</code></pre>
+</div>
+</div>
+<p>There are NA values so let’s remove them</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>crime_labour <span class="ot">&lt;-</span> <span class="fu">na.omit</span>(crime_labour)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Do another check</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>na <span class="ot">&lt;-</span> crime_labour <span class="sc">%&gt;%</span></span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">na_district =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(district)),</span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_category =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(category)),</span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_type =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(type)),</span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_crimes =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(crimes)),</span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_year =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(year)),</span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_lf =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(lf)),</span>
+<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_lf_unemployed =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(lf_unemployed)),</span>
+<span id="cb47-9"><a href="#cb47-9" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_u_rate =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(u_rate)),</span>
+<span id="cb47-10"><a href="#cb47-10" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb47-11"><a href="#cb47-11" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(na)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 8
+  na_district na_category na_type na_crimes na_year na_lf na_lf_unemployed
+        &lt;int&gt;       &lt;int&gt;   &lt;int&gt;     &lt;int&gt;   &lt;int&gt; &lt;int&gt;            &lt;int&gt;
+1           0           0       0         0       0     0                0
+# ℹ 1 more variable: na_u_rate &lt;int&gt;</code></pre>
+</div>
+</div>
+<p>Finally with combine it with our <em>msia_sf</em></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>msia <span class="ot">&lt;-</span> <span class="fu">left_join</span>(msia_sf,crime_labour, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"ADM2_EN"</span> <span class="ot">=</span> <span class="st">"district"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>        <span class="fu">select</span>(<span class="dv">1</span>,<span class="dv">6</span>,<span class="dv">16</span><span class="sc">:</span><span class="dv">23</span>)</span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>msia</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Simple feature collection with 7024 features and 10 fields
 Geometry type: MULTIPOLYGON
 Dimension:     XY
 Bounding box:  xmin: 184853.1 ymin: 94420.8 xmax: 2380932 ymax: 829136
 Projected CRS: Kertau (RSO) / RSO Malaya (m)
-# A tibble: 7,500 × 11
+# A tibble: 7,024 × 11
    ADM2_EN    ADM1_EN state.x category type     crimes  year    lf lf_unemployed
    &lt;chr&gt;      &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;    &lt;chr&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;         &lt;dbl&gt;
  1 Batu Pahat Johor   Johor   assault  causing…     41  2019  214.           3.7
@@ -1020,13 +1079,232 @@ Projected CRS: Kertau (RSO) / RSO Malaya (m)
  8 Batu Pahat Johor   Johor   assault  murder        3  2022  221.           4  
  9 Batu Pahat Johor   Johor   assault  rape         29  2019  214.           3.7
 10 Batu Pahat Johor   Johor   assault  rape         16  2020  219.           4.7
-# ℹ 7,490 more rows
+# ℹ 7,014 more rows
 # ℹ 2 more variables: u_rate &lt;dbl&gt;, geometry &lt;MULTIPOLYGON [m]&gt;</code></pre>
 </div>
 </div>
-
-
+<p>Looking at this we could see some additional rows have been added. Let’s see if there are any NA values</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>na <span class="ot">&lt;-</span> msia <span class="sc">%&gt;%</span></span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">na_district =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(ADM2_EN)),</span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_category =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(category)),</span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_type =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(type)),</span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_crimes =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(crimes)),</span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_year =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(year)),</span>
+<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_lf =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(lf)),</span>
+<span id="cb51-8"><a href="#cb51-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_lf_unemployed =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(lf_unemployed)),</span>
+<span id="cb51-9"><a href="#cb51-9" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_u_rate =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(u_rate)),</span>
+<span id="cb51-10"><a href="#cb51-10" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb51-11"><a href="#cb51-11" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(na)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Simple feature collection with 1 feature and 8 fields
+Geometry type: MULTIPOLYGON
+Dimension:     XY
+Bounding box:  xmin: 184853.1 ymin: 94420.8 xmax: 2380932 ymax: 829136
+Projected CRS: Kertau (RSO) / RSO Malaya (m)
+# A tibble: 1 × 9
+  na_district na_category na_type na_crimes na_year na_lf na_lf_unemployed
+        &lt;int&gt;       &lt;int&gt;   &lt;int&gt;     &lt;int&gt;   &lt;int&gt; &lt;int&gt;            &lt;int&gt;
+1           0          16      16        16      16    16               16
+# ℹ 2 more variables: na_u_rate &lt;int&gt;, geometry &lt;MULTIPOLYGON [m]&gt;</code></pre>
+</div>
+</div>
+<p>Let’s remove the NA rows</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>msia <span class="ot">&lt;-</span> <span class="fu">na.omit</span>(msia)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Do another check</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>na <span class="ot">&lt;-</span> msia <span class="sc">%&gt;%</span></span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">na_district =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(ADM2_EN)),</span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_category =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(category)),</span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_type =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(type)),</span>
+<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_crimes =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(crimes)),</span>
+<span id="cb54-6"><a href="#cb54-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_year =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(year)),</span>
+<span id="cb54-7"><a href="#cb54-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_lf =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(lf)),</span>
+<span id="cb54-8"><a href="#cb54-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_lf_unemployed =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(lf_unemployed)),</span>
+<span id="cb54-9"><a href="#cb54-9" aria-hidden="true" tabindex="-1"></a>            <span class="at">na_u_rate =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(u_rate)),</span>
+<span id="cb54-10"><a href="#cb54-10" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb54-11"><a href="#cb54-11" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(na)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Simple feature collection with 1 feature and 8 fields
+Geometry type: MULTIPOLYGON
+Dimension:     XY
+Bounding box:  xmin: 184853.1 ymin: 94420.8 xmax: 2380932 ymax: 829136
+Projected CRS: Kertau (RSO) / RSO Malaya (m)
+# A tibble: 1 × 9
+  na_district na_category na_type na_crimes na_year na_lf na_lf_unemployed
+        &lt;int&gt;       &lt;int&gt;   &lt;int&gt;     &lt;int&gt;   &lt;int&gt; &lt;int&gt;            &lt;int&gt;
+1           0           0       0         0       0     0                0
+# ℹ 2 more variables: na_u_rate &lt;int&gt;, geometry &lt;MULTIPOLYGON [m]&gt;</code></pre>
+</div>
+</div>
 </section>
+</section>
+</section>
+<section id="global-measures-of-spatial-autocorrelation" class="level2">
+<h2 class="anchored" data-anchor-id="global-measures-of-spatial-autocorrelation"><strong>Global Measures of Spatial Autocorrelation</strong></h2>
+<section id="calculating-neighbours-and-weights" class="level3">
+<h3 class="anchored" data-anchor-id="calculating-neighbours-and-weights"><strong>Calculating Neighbours and Weights</strong></h3>
+<p>I would be defining neighbour’s based on Queens contiguity, and also let’s assign spatial weights to each neighbouring polygon</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>msia_nb_q <span class="ot">&lt;-</span> <span class="fu">st_contiguity</span>(msia, <span class="at">queen=</span><span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>As this takes time let’s write it to a rds file</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(msia_nb_q, <span class="st">"data/rds/msia_nb_q.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="computing-row-standardised-weight-matrix" class="level3">
+<h3 class="anchored" data-anchor-id="computing-row-standardised-weight-matrix"><strong>Computing Row-Standardised Weight Matrix</strong></h3>
+<p>Next, we need to assign spatial weights to each neighboring polygon.</p>
+<p><a href="https://rdrr.io/cran/sfdep/man/st_weights.html"><code>st_weights()</code></a> function from <code>sfdep</code> pacakge can be used to supplement a neighbour list with spatial weights</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>msia_wm_rs <span class="ot">&lt;-</span> <span class="fu">st_weights</span>(msia_nb_q, <span class="at">style=</span><span class="st">"W"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We will mutate the newly created neighbour list object&nbsp;<code>msia_nb_q</code>&nbsp;and weight matrix&nbsp;<code>msia_wm_rs</code>&nbsp;into our existing&nbsp;<code>msia</code>. The result will be a new object, which we will call&nbsp;<code>wm_q</code></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>wm_q <span class="ot">&lt;-</span> msia <span class="sc">%&gt;%</span></span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">nb =</span> msia_nb_q,</span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>         <span class="at">wt =</span> msia_wm_rs,</span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a>         <span class="at">.before =</span> <span class="dv">1</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="global-morans-i-test" class="level3">
+<h3 class="anchored" data-anchor-id="global-morans-i-test"><strong>Global Moran’s I Test</strong></h3>
+<p>To assess spatial autocorrelation in our dataset, or how the presence of crimes in a district may form clusters.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="fu">global_moran_test</span>(wm_q<span class="sc">$</span>crimes,</span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a>                  wm_q<span class="sc">$</span>nb,</span>
+<span id="cb60-3"><a href="#cb60-3" aria-hidden="true" tabindex="-1"></a>                  wm_q<span class="sc">$</span>wt,</span>
+<span id="cb60-4"><a href="#cb60-4" aria-hidden="true" tabindex="-1"></a>                  <span class="at">zero.policy =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb60-5"><a href="#cb60-5" aria-hidden="true" tabindex="-1"></a>                  <span class="at">na.action=</span>na.omit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Moran I test under randomisation
+
+data:  x  
+weights: listw    
+
+Moran I statistic standard deviate = 118.83, p-value &lt; 2.2e-16
+alternative hypothesis: greater
+sample estimates:
+Moran I statistic       Expectation          Variance 
+     1.240600e-01     -1.427144e-04      1.092536e-06 </code></pre>
+</div>
+</div>
+<p>From the test, the positive moran’s I statistic suggests that there is clustering, or a degree of spatial autocorrelation. This might be expected as when committing a crime, you might run to a neighbouring area. To commit another crime so as to be harder to track.</p>
+<p>We can also see that the P-value is small. From a frequentist approach, we can see that this is unlikely to have occured by chance.</p>
+<p>To strengthen our findings, we run a monte-carlo simulation.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2932</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="global-morans-i-permutation-test" class="level3">
+<h3 class="anchored" data-anchor-id="global-morans-i-permutation-test"><strong>Global Moran’s</strong> I permutation test</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="fu">global_moran_perm</span>(wm_q<span class="sc">$</span>crimes,</span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>           wm_q<span class="sc">$</span>nb,</span>
+<span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a>           wm_q<span class="sc">$</span>wt,</span>
+<span id="cb63-4"><a href="#cb63-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">zero.policy =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb63-5"><a href="#cb63-5" aria-hidden="true" tabindex="-1"></a>           <span class="at">nsim =</span> <span class="dv">999</span>,</span>
+<span id="cb63-6"><a href="#cb63-6" aria-hidden="true" tabindex="-1"></a>           <span class="at">na.action=</span>na.omit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Monte-Carlo simulation of Moran I
+
+data:  x 
+weights: listw  
+number of simulations + 1: 1000 
+
+statistic = 0.12406, observed rank = 1000, p-value &lt; 2.2e-16
+alternative hypothesis: two.sided</code></pre>
+</div>
+</div>
+<p>From the outputs above, we can observe that the Moran’s I statistic (after 1000 permutations) for the <strong>0.12406</strong> with a p-value &lt; <strong>2.2e-16</strong> which is similar to our previous result with low p-value which suggest that it did not happen randomly.</p>
+</section>
+</section>
+<section id="local-moran-i" class="level2">
+<h2 class="anchored" data-anchor-id="local-moran-i">Local Moran I</h2>
+<p>Local Indicators of Spatial Association, or LISA, let us evaluate clusters between districts. Where higher values denote that the region is more heavily influenced by its surroundings.</p>
+<section id="calculating-local-moran-i" class="level3">
+<h3 class="anchored" data-anchor-id="calculating-local-moran-i">Calculating Local Moran I</h3>
+<p>Calculating local Moran’s I statistics and append the results to the original dataframe as new columns.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a>wm_q <span class="ot">&lt;-</span> wm_q <span class="sc">%&gt;%</span></span>
+<span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a>          <span class="fu">mutate</span>(<span class="at">local_moran =</span> <span class="fu">local_moran</span>(</span>
+<span id="cb65-3"><a href="#cb65-3" aria-hidden="true" tabindex="-1"></a>            crimes, nb, wt, <span class="at">nsim =</span> <span class="dv">999</span>, <span class="at">zero.policy=</span><span class="cn">TRUE</span>),</span>
+<span id="cb65-4"><a href="#cb65-4" aria-hidden="true" tabindex="-1"></a>                 <span class="at">.before =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb65-5"><a href="#cb65-5" aria-hidden="true" tabindex="-1"></a>          <span class="fu">unnest</span>(local_moran)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="visualising-local-moran-i" class="level3">
+<h3 class="anchored" data-anchor-id="visualising-local-moran-i">Visualising Local Moran I</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a>lisa <span class="ot">&lt;-</span> wm_q</span>
+<span id="cb66-2"><a href="#cb66-2" aria-hidden="true" tabindex="-1"></a>map1 <span class="ot">&lt;-</span> <span class="fu">tm_shape</span>(lisa) <span class="sc">+</span></span>
+<span id="cb66-3"><a href="#cb66-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_fill</span>(<span class="st">"ii"</span>) <span class="sc">+</span> </span>
+<span id="cb66-4"><a href="#cb66-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb66-5"><a href="#cb66-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_view</span>(<span class="at">set.zoom.limits =</span> <span class="fu">c</span>(<span class="dv">6</span>,<span class="dv">8</span>)) <span class="sc">+</span></span>
+<span id="cb66-6"><a href="#cb66-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_layout</span>(<span class="at">main.title =</span> <span class="st">"local Moran's I of No of crimes"</span>,</span>
+<span id="cb66-7"><a href="#cb66-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">main.title.size =</span> <span class="fl">0.8</span>)</span>
+<span id="cb66-8"><a href="#cb66-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb66-9"><a href="#cb66-9" aria-hidden="true" tabindex="-1"></a>map2 <span class="ot">&lt;-</span> <span class="fu">tm_shape</span>(lisa) <span class="sc">+</span></span>
+<span id="cb66-10"><a href="#cb66-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_fill</span>(<span class="st">"p_ii"</span>,</span>
+<span id="cb66-11"><a href="#cb66-11" aria-hidden="true" tabindex="-1"></a>          <span class="at">breaks =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.001</span>, <span class="fl">0.01</span>, <span class="fl">0.05</span>, <span class="dv">1</span>),</span>
+<span id="cb66-12"><a href="#cb66-12" aria-hidden="true" tabindex="-1"></a>              <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"0.001"</span>, <span class="st">"0.01"</span>, <span class="st">"0.05"</span>, <span class="st">"Not sig"</span>)) <span class="sc">+</span> </span>
+<span id="cb66-13"><a href="#cb66-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb66-14"><a href="#cb66-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_layout</span>(<span class="at">main.title =</span> <span class="st">"p-value of local Moran's I"</span>,</span>
+<span id="cb66-15"><a href="#cb66-15" aria-hidden="true" tabindex="-1"></a>            <span class="at">main.title.size =</span> <span class="fl">0.8</span>)</span>
+<span id="cb66-16"><a href="#cb66-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb66-17"><a href="#cb66-17" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_arrange</span>(map1, map2, <span class="at">ncol =</span> <span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Variable(s) "ii" contains positive and negative values, so midpoint is set to 0. Set midpoint = NA to show the full spectrum of the color palette.</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-home_Ex03_files/figure-html/unnamed-chunk-41-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="lisa" class="level3">
+<h3 class="anchored" data-anchor-id="lisa">LISA</h3>
+<p>The local indicator of spatial association (LISA) for each observation gives an indication of the extent of significant spatial clustering of similar values around that observation. LISA map is a categorical map showing type of outliers and clusters. There are two types of outliers namely: <strong>High-Low</strong> and <strong>Low-High</strong> outliers. Likewise, there are two type of clusters namely: <strong>High-High</strong> and <strong>Low-Low</strong> cluaters.</p>
+<ul>
+<li><p><strong>High-Low Outliers:</strong> Provinces with a high value of crimes, surrounded by neighbouring districts with low values of crimes.</p></li>
+<li><p><strong>Low-High Outliers</strong>: Provinces with a low value of crimes, surrounded by neighbouring districts with high values of crimes.</p></li>
+<li><p><strong>High-High Clusters</strong>: Provinces with a high value of crimes, surrounded by neighbouring districts with high values of crimes.</p></li>
+<li><p><strong>Low-Low Clusters</strong>: Provinces with a low value of crimes, surrounded by neighbouring districts with low values of crimes.</p></li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a>lisa_sig <span class="ot">&lt;-</span> lisa <span class="sc">%&gt;%</span> <span class="fu">filter</span>(p_ii_sim <span class="sc">&lt;</span> <span class="fl">0.05</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(lisa) <span class="sc">+</span></span>
+<span id="cb69-2"><a href="#cb69-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>() <span class="sc">+</span> </span>
+<span id="cb69-3"><a href="#cb69-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span> </span>
+<span id="cb69-4"><a href="#cb69-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(lisa_sig) <span class="sc">+</span> </span>
+<span id="cb69-5"><a href="#cb69-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_fill</span>(<span class="st">"mean"</span>, <span class="at">title =</span> <span class="st">"LISA class"</span>) <span class="sc">+</span></span>
+<span id="cb69-6"><a href="#cb69-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>(<span class="at">alpha =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
+<span id="cb69-7"><a href="#cb69-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_layout</span>(<span class="at">main.title =</span> <span class="st">"LISA map of crimes"</span>, <span class="at">main.title.size =</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: One tm layer group has duplicated layer types, which are omitted. To
+draw multiple layers of the same type, use multiple layer groups (i.e. specify
+tm_shape prior to each of them).</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-home_Ex03_files/figure-html/unnamed-chunk-43-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+
+
 </section>
 </section>
 

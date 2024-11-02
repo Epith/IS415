@@ -445,11 +445,228 @@ crime_labour <- crime %>%
         select(1:4,6,7,10,12,15)
 ```
 
-Next combine it with our *msia_sf*
+Let's check for any empty rows before *left_join*
+
+```{r}
+na <- crime_labour %>%
+  summarise(na_district = sum(is.na(district)),
+            na_category = sum(is.na(category)),
+            na_type = sum(is.na(type)),
+            na_crimes = sum(is.na(crimes)),
+            na_year = sum(is.na(year)),
+            na_lf = sum(is.na(lf)),
+            na_lf_unemployed = sum(is.na(lf_unemployed)),
+            na_u_rate = sum(is.na(u_rate)),
+            )
+print(na)
+```
+
+There are NA values so let's remove them
+
+```{r}
+crime_labour <- na.omit(crime_labour)
+```
+
+Do another check
+
+```{r}
+na <- crime_labour %>%
+  summarise(na_district = sum(is.na(district)),
+            na_category = sum(is.na(category)),
+            na_type = sum(is.na(type)),
+            na_crimes = sum(is.na(crimes)),
+            na_year = sum(is.na(year)),
+            na_lf = sum(is.na(lf)),
+            na_lf_unemployed = sum(is.na(lf_unemployed)),
+            na_u_rate = sum(is.na(u_rate)),
+            )
+print(na)
+```
+
+Finally with combine it with our *msia_sf*
 
 ```{r}
 msia <- left_join(msia_sf,crime_labour, by = c("ADM2_EN" = "district")) %>%
         select(1,6,16:23)
 
 msia
+```
+
+Looking at this we could see some additional rows have been added. Let's see if there are any NA values
+
+```{r}
+na <- msia %>%
+  summarise(na_district = sum(is.na(ADM2_EN)),
+            na_category = sum(is.na(category)),
+            na_type = sum(is.na(type)),
+            na_crimes = sum(is.na(crimes)),
+            na_year = sum(is.na(year)),
+            na_lf = sum(is.na(lf)),
+            na_lf_unemployed = sum(is.na(lf_unemployed)),
+            na_u_rate = sum(is.na(u_rate)),
+            )
+print(na)
+```
+
+Let's remove the NA rows
+
+```{r}
+msia <- na.omit(msia)
+```
+
+Do another check
+
+```{r}
+na <- msia %>%
+  summarise(na_district = sum(is.na(ADM2_EN)),
+            na_category = sum(is.na(category)),
+            na_type = sum(is.na(type)),
+            na_crimes = sum(is.na(crimes)),
+            na_year = sum(is.na(year)),
+            na_lf = sum(is.na(lf)),
+            na_lf_unemployed = sum(is.na(lf_unemployed)),
+            na_u_rate = sum(is.na(u_rate)),
+            )
+print(na)
+```
+
+## Global Measures of Spatial Autocorrelation
+
+### Calculating Neighbours and Weights
+
+I would be defining neighbour's based on Queens contiguity, and also let's assign spatial weights to each neighbouring polygon
+
+```{r}
+#| eval: false
+msia_nb_q <- st_contiguity(msia, queen=TRUE)
+```
+
+As this takes time let's write it to a rds file
+
+```{r}
+#| eval: false
+write_rds(msia_nb_q, "data/rds/msia_nb_q.rds")
+```
+
+```{r}
+#| echo: false
+msia_nb_q <- read_rds("data/rds/msia_nb_q.rds")
+```
+
+### **Computing Row-Standardised Weight Matrix**
+
+Next, we need to assign spatial weights to each neighboring polygon.
+
+[`st_weights()`](https://rdrr.io/cran/sfdep/man/st_weights.html) function from `sfdep` pacakge can be used to supplement a neighbour list with spatial weights
+
+```{r}
+msia_wm_rs <- st_weights(msia_nb_q, style="W")
+```
+
+We will mutate the newly created neighbour list object `msia_nb_q` and weight matrix `msia_wm_rs` into our existing `msia`. The result will be a new object, which we will call `wm_q`
+
+```{r}
+wm_q <- msia %>%
+  mutate(nb = msia_nb_q,
+         wt = msia_wm_rs,
+         .before = 1) 
+```
+
+### **Global Moran’s I Test**
+
+To assess spatial autocorrelation in our dataset, or how the presence of crimes in a district may form clusters.
+
+```{r}
+global_moran_test(wm_q$crimes,
+                  wm_q$nb,
+                  wm_q$wt,
+                  zero.policy = TRUE,
+                  na.action=na.omit)
+```
+
+From the test, the positive moran’s I statistic suggests that there is clustering, or a degree of spatial autocorrelation. This might be expected as when committing a crime, you might run to a neighbouring area. To commit another crime so as to be harder to track.
+
+We can also see that the P-value is small. From a frequentist approach, we can see that this is unlikely to have occured by chance.
+
+To strengthen our findings, we run a monte-carlo simulation.
+
+```{r}
+set.seed(2932)
+```
+
+### **Global Moran’s** I permutation test
+
+```{r}
+global_moran_perm(wm_q$crimes,
+           wm_q$nb,
+           wm_q$wt,
+           zero.policy = TRUE,
+           nsim = 999,
+           na.action=na.omit)
+```
+
+From the outputs above, we can observe that the Moran’s I statistic (after 1000 permutations) for the **0.12406** with a p-value \< **2.2e-16** which is similar to our previous result with low p-value which suggest that it did not happen randomly.
+
+## Local Moran I
+
+Local Indicators of Spatial Association, or LISA, let us evaluate clusters between districts. Where higher values denote that the region is more heavily influenced by its surroundings.
+
+### Calculating Local Moran I
+
+Calculating local Moran’s I statistics and append the results to the original dataframe as new columns.
+
+```{r}
+wm_q <- wm_q %>%
+          mutate(local_moran = local_moran(
+            crimes, nb, wt, nsim = 999, zero.policy=TRUE),
+                 .before = 1) %>%
+          unnest(local_moran)
+```
+
+### Visualising Local Moran I
+
+```{r}
+lisa <- wm_q
+map1 <- tm_shape(lisa) +
+  tm_fill("ii") + 
+  tm_borders(alpha = 0.5) +
+  tm_view(set.zoom.limits = c(6,8)) +
+  tm_layout(main.title = "local Moran's I of No of crimes",
+            main.title.size = 0.8)
+
+map2 <- tm_shape(lisa) +
+  tm_fill("p_ii",
+          breaks = c(0, 0.001, 0.01, 0.05, 1),
+              labels = c("0.001", "0.01", "0.05", "Not sig")) + 
+  tm_borders(alpha = 0.5) +
+  tm_layout(main.title = "p-value of local Moran's I",
+            main.title.size = 0.8)
+
+tmap_arrange(map1, map2, ncol = 2)
+```
+
+### LISA
+
+The local indicator of spatial association (LISA) for each observation gives an indication of the extent of significant spatial clustering of similar values around that observation. LISA map is a categorical map showing type of outliers and clusters. There are two types of outliers namely: **High-Low** and **Low-High** outliers. Likewise, there are two type of clusters namely: **High-High** and **Low-Low** cluaters.
+
+-   **High-Low Outliers:** Provinces with a high value of crimes, surrounded by neighbouring districts with low values of crimes.
+
+-   **Low-High Outliers**: Provinces with a low value of crimes, surrounded by neighbouring districts with high values of crimes.
+
+-   **High-High Clusters**: Provinces with a high value of crimes, surrounded by neighbouring districts with high values of crimes.
+
+-   **Low-Low Clusters**: Provinces with a low value of crimes, surrounded by neighbouring districts with low values of crimes.
+
+```{r}
+lisa_sig <- lisa %>% filter(p_ii_sim < 0.05)
+```
+
+```{r}
+tm_shape(lisa) +
+  tm_polygons() + 
+  tm_borders(alpha = 0.5) + 
+  tm_shape(lisa_sig) + 
+  tm_fill("mean", title = "LISA class") +
+  tm_borders(alpha = 0.4) +
+  tm_layout(main.title = "LISA map of crimes", main.title.size = 1)
 ```
