@@ -10,7 +10,7 @@ execute:
 categories: [Take-Home, Code]
 ---
 
-## **Overview and Objectives**
+## Overview and Objectives
 
 In this take-home my aim is to evaluate the necessary R packages necessary to perform:
 
@@ -492,6 +492,8 @@ msia <- left_join(msia_sf,crime_labour, by = c("ADM2_EN" = "district")) %>%
 msia
 ```
 
+### NA Values
+
 Looking at this we could see some additional rows have been added. Let's see if there are any NA values
 
 ```{r}
@@ -530,6 +532,18 @@ na <- msia %>%
 print(na)
 ```
 
+Let's check for duplicates as well
+
+```{r}
+duplicates <- msia %>%
+    group_by(ADM2_EN, year, category, type, crimes) %>%
+    filter(n() > 1)
+if(nrow(duplicates) > 0) {
+    print("Duplicate combinations found!")
+    print(duplicates)
+}
+```
+
 ## Global Measures of Spatial Autocorrelation
 
 ### Calculating Neighbours and Weights
@@ -553,7 +567,7 @@ write_rds(msia_nb_q, "data/rds/msia_nb_q.rds")
 msia_nb_q <- read_rds("data/rds/msia_nb_q.rds")
 ```
 
-### **Computing Row-Standardised Weight Matrix**
+### Computing Row-Standardised Weight Matrix
 
 Next, we need to assign spatial weights to each neighboring polygon.
 
@@ -572,7 +586,7 @@ wm_q <- msia %>%
          .before = 1) 
 ```
 
-### **Global Moran’s I Test**
+### Global Moran’s I Test
 
 To assess spatial autocorrelation in our dataset, or how the presence of crimes in a district may form clusters.
 
@@ -594,7 +608,7 @@ To strengthen our findings, we run a monte-carlo simulation.
 set.seed(2932)
 ```
 
-### **Global Moran’s** I permutation test
+### Global Moran’s I permutation test
 
 ```{r}
 global_moran_perm(wm_q$crimes,
@@ -670,3 +684,165 @@ tm_shape(lisa) +
   tm_borders(alpha = 0.4) +
   tm_layout(main.title = "LISA map of crimes", main.title.size = 1)
 ```
+
+## Emerging Hot Spot Analysis
+
+### Performing Emerging Hot Spot Analysis
+
+EHSA we can—and likely should—incorporate the time-lag of our spatial neighbors. Secondly, there are classifications proposed by ESRI which help us understand how each location is changing over time. Both of these are handled by the emerging_hotspot_analysis() function.
+
+This emerging_hotspot_analysis() takes a spacetime object x, and the quoted name of the variable of interested in .var at minimum. We can specify the number of time lags using the argument k which is set to 1 by default.
+
+For this let's create a st_data without the geometry and only doing it for *assault* for category and *causing_injury* for type
+
+```{r}
+category_to_select <- c(
+  "assault"
+)
+type_to_select <- c(
+  "causing_injury"
+)
+msia_df <- msia %>% filter(category %in% category_to_select, type %in% type_to_select )
+msia_df <- msia_df %>%
+  select(year, crimes, ADM2_EN) %>%
+  st_drop_geometry()
+```
+
+```{r}
+msia_sf_filtered <- msia_sf %>%
+  semi_join(msia_df, by = "ADM2_EN")
+```
+
+Next is to create a spacetime object
+
+```{r}
+msia_spt <- spacetime(msia_df, msia_sf,
+                 .loc_col = "ADM2_EN",
+                 .time_col = "year")
+```
+
+Let's check if it is indeed a spacetime object
+
+```{r}
+is_spacetime_cube(msia_spt)
+```
+
+```{r}
+msia_df <- msia_df %>%
+    complete(year = unique(year),
+             ADM2_EN = unique(ADM2_EN),
+             fill = list(crimes = 0))  # Fill missing values with 0 or NA as needed
+
+print(paste("Number of years:", length(unique(msia_df$year))))
+print(paste("Number of locations:", length(unique(msia_df$ADM2_EN))))
+print(paste("Total rows:", nrow(msia_df)))
+```
+
+For our space time we are suppose to get 128\*4 = 512 rows but we are getting 584 rows. So there could be cases of duplications
+
+```{r}
+duplicates <- msia_df %>%
+    group_by(year, ADM2_EN) %>%
+    filter(n() > 1)
+if(nrow(duplicates) > 0) {
+    print("Duplicate combinations found!")
+    print(duplicates)
+}
+```
+
+Let's remove them
+
+```{r}
+msia_df <- msia_df %>%
+    group_by(year, ADM2_EN) %>%
+    summarise(crimes = mean(crimes, na.rm = TRUE)) %>%
+    ungroup()
+check_duplicates <- msia_df %>%
+    group_by(year, ADM2_EN) %>%
+    filter(n() > 1)
+print("Number of remaining duplicates:")
+print(nrow(check_duplicates))
+```
+
+Let's create the spacetime object again
+
+```{r}
+msia_spt <- spacetime(msia_df, msia_sf,
+                 .loc_col = "ADM2_EN",
+                 .time_col = "year")
+```
+
+```{r}
+is_spacetime_cube(msia_spt)
+```
+
+Another possible error could be that the *msia_sf* has more locations than what is in *msia_df*. Let's check it
+
+```{r}
+n_locations_df <- length(unique(msia_df$ADM2_EN))
+n_locations_sf <- length(unique(msia_sf$ADM2_EN))
+print(n_locations_df)
+print(n_locations_sf)
+```
+
+In fact it is true, so lets change the *msia_sf* to only include those in *msia_df*
+
+```{r}
+msia_sf_filtered <- msia_sf %>%
+  semi_join(msia_df, by = "ADM2_EN")
+
+n_locations_df <- length(unique(msia_df$ADM2_EN))
+n_locations_sf <- length(unique(msia_sf_filtered$ADM2_EN))
+print(n_locations_df)
+print(n_locations_sf)
+```
+
+Create the spacetime object again
+
+```{r}
+msia_spt <- spacetime(msia_df, msia_sf_filtered,
+                 .loc_col = "ADM2_EN",
+                 .time_col = "year")
+```
+
+```{r}
+is_spacetime_cube(msia_spt)
+```
+
+We will perform EHSA analysis by using [`emerging_hotspot_analysis()`](https://sfdep.josiahparry.com/reference/emerging_hotspot_analysis.html) of sfdep package. It takes a spacetime object `msia_spt`, and the name of the variable of interest `crimes` for .var argument.
+
+```{r}
+ehsa <- emerging_hotspot_analysis(
+  x = msia_spt, 
+  .var = "crimes", 
+  k = 1, 
+  nsim = 99
+)
+```
+
+We can then join them together
+
+```{r}
+ehsa_sf <- left_join(msia_sf, ehsa, by = c("ADM2_EN" = "location"))
+```
+
+### Visualising Distribution of EHSA (85% Confidence)
+
+```{r}
+EHSA_sig <- ehsa_sf %>%
+  filter(p_value < 0.15) 
+```
+
+```{r}
+tm_shape(ehsa_sf) +
+  tm_polygons() +
+  tm_borders(alpha = 0.5) +
+  tm_shape(EHSA_sig) +
+  tm_fill(col = "classification", title = "Classification") + 
+  tm_borders(alpha = 0.4) +
+  tm_layout(main.title = "EHSA (>85%)", main.title.size = 1)
+```
+
+## Testing for Shiny App
+
+All of the code above works well for getting the basics of **Global and Local Spatial Autocorrelation and Emerging Hot Spot Analysis** however when it comes to a Shiny application. The input is more dynamic as the user is able to choose his/her own inputs to alter the map, to make their own interpretation. Also the code takes awhile to run due to the size of the dataset to be used
