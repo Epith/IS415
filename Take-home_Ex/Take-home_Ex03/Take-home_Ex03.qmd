@@ -845,4 +845,284 @@ tm_shape(ehsa_sf) +
 
 ## Testing for Shiny App
 
-All of the code above works well for getting the basics of **Global and Local Spatial Autocorrelation and Emerging Hot Spot Analysis** however when it comes to a Shiny application. The input is more dynamic as the user is able to choose his/her own inputs to alter the map, to make their own interpretation. Also the code takes awhile to run due to the size of the dataset to be used
+All of the code above works well for getting the basics of **Global and Local Spatial Autocorrelation and Emerging Hot Spot Analysis** however when it comes to a Shiny application. The input is more dynamic as the user is able to choose his/her own inputs to alter the map, to make their own interpretation. Also the code takes awhile to run due to the size of the dataset to be used.
+
+### Filtering for Global and Local Spatial Correlation
+
+#### Global Spatial 
+
+As Shiny Application is interactive and user chooses the input, it is essentially applying a filter on the dataset.
+
+For ***msia*** we have
+
+-   **ADM2_EN:** we can limit this to all or have the user to be able to select a mixture of districts
+
+-   **category:** there is only assault or property. So the user can select either or, or both
+
+-   **type:** to show based on what category is chosen. User is able to select all or a mixture
+
+-   **year:** For this it would be best to limit the user to only select 1 year or a max of 2 years. Given how long it takes to run the code for 4 years already
+
+-   **p_ii:** This can also be adjusted in the form of a slider to show the confidence level where 95% confidence would be \< 0.05 and 85% confidence is \< 0.15. To show strong evidence.
+
+Something of what the filter would look like
+
+```{r}
+#in this case no filter is applied for ADM2_EN, it already contains all
+ADM2_EN_to_select <- c("all")
+category_to_select <- c("assault")
+type_to_select <- c("causing_injury")
+year_to_select <- c("2019")
+```
+
+however for this i would like to only have the year filtered to have the worst case scenario for running time
+
+```{r}
+msia_filtered <- msia %>% filter(year %in% year_to_select, )
+```
+
+Afterwards we can perform our normal global and local
+
+```{r}
+msia_filtered_nb_q <- st_contiguity(msia_filtered, queen=TRUE)
+```
+
+This significantly cuts down the timing, but its still way longer than what a user would be willing to wait for. This would run for about 45 secs.
+
+Limiting the category selection to either or might help it.
+
+```{r}
+msia_filtered <- msia %>% filter(year %in% year_to_select, category %in% category_to_select )
+```
+
+```{r}
+msia_filtered_nb_q <- st_contiguity(msia_filtered, queen=TRUE)
+```
+
+This cuts down the timing by quite a fair bit but will it affect the output
+
+```{r}
+msia_filtered_wm_rs <- st_weights(msia_filtered_nb_q, style="W")
+```
+
+```{r}
+wm_q_filtered <- msia_filtered %>%
+  mutate(nb = msia_filtered_nb_q,
+         wt = msia_filtered_wm_rs,
+         .before = 1) 
+```
+
+```{r}
+global_moran_test(wm_q_filtered$crimes,
+                  wm_q_filtered$nb,
+                  wm_q_filtered$wt,
+                  zero.policy = TRUE)
+```
+
+From the test, we can still see a positive moran’s I statistic suggests that there is clustering, or a degree of spatial autocorrelation.
+
+We can also see that the P-value is small.
+
+We can run monte-carlo simulation as well
+
+```{r}
+global_moran_perm(wm_q_filtered$crimes,
+           wm_q_filtered$nb,
+           wm_q_filtered$wt,
+           zero.policy = TRUE,
+           nsim = 999,
+           na.action=na.omit)
+```
+
+The values are about the same
+
+#### Local Spatial
+
+We can do **Local Moran I** as well
+
+```{r}
+wm_q_filtered <- wm_q_filtered %>%
+          mutate(local_moran = local_moran(
+            crimes, nb, wt, nsim = 999, zero.policy=TRUE),
+                 .before = 1) %>%
+          unnest(local_moran)
+```
+
+So the above works with our filters applied. However the thing to consider is to whether to allow the user to be able select both category or a single one. As having a single category cuts down the processing time by a lot. But having more data also helps to portray the big picture better. But at the cost of time but not by a lot. It would still run it in under 1 minute.
+
+### Testing different types of plots
+
+#### Different map arrangement
+
+```{r}
+lisa <- wm_q_filtered
+map1 <- tm_shape(lisa) +
+  tm_fill("ii") + 
+  tm_borders(alpha = 0.5) +
+  tm_view(set.zoom.limits = c(6,8)) +
+  tm_layout(main.title = "local Moran's I of No of crimes",
+            main.title.size = 0.8)
+
+map2 <- tm_shape(lisa) +
+  tm_fill("p_ii",
+          breaks = c(0, 0.001, 0.01, 0.05, 1),
+              labels = c("0.001", "0.01", "0.05", "Not sig")) + 
+  tm_borders(alpha = 0.5) +
+  tm_layout(main.title = "p-value of local Moran's I",
+            main.title.size = 0.8)
+
+tmap_arrange(map1, map2, ncol = 2)
+```
+
+```{r}
+tm_shape(lisa) +
+  tm_fill("p_ii",
+          breaks = c(0, 0.001, 0.01, 0.05, 1),
+          labels = c("< 0.001", "< 0.01", "< 0.05", "Not sig")) + 
+  tm_borders(alpha = 0.5) +
+  tm_text("u_rate", size = 0.4, col = "black") +  # Adding `p_value_2` as a text label
+  tm_layout(main.title = "p-values of Two Variables",
+            main.title.size = 0.8)
+```
+
+Having this plot is one way to display the *p_ii* with the *u_rate* to see if there are any relation to unemployment rate and the high clustering.
+
+```{r}
+lisa <- wm_q_filtered
+map1 <- tm_shape(lisa) +
+  tm_fill("p_ii",
+          breaks = c(0, 0.001, 0.01, 0.05, 1),
+          labels = c("< 0.001", "< 0.01", "< 0.05", "Not sig")) + 
+  tm_borders(alpha = 0.5) +
+  tm_view(set.zoom.limits = c(6,8)) +
+  tm_layout(main.title = "p-value of local Moran's I of No of crimes",
+            main.title.size = 0.8)
+
+map2 <- tm_shape(lisa) +
+  tm_fill("u_rate") + 
+  tm_borders(alpha = 0.5) +
+  tm_layout(main.title = "unemployment rate",
+            main.title.size = 0.8)
+
+tmap_arrange(map1, map2, ncol = 1)
+```
+
+Having 2 Maps each filled with *p_ii* and *u_rate* and arranging them top and bottom might be easier to read
+
+```{r}
+lisa <- wm_q_filtered
+map1 <- tm_shape(lisa) +
+  tm_fill("p_ii",
+          breaks = c(0, 0.001, 0.01, 0.05, 1),
+          labels = c("< 0.001", "< 0.01", "< 0.05", "Not sig")) + 
+  tm_borders(alpha = 0.5) +
+  tm_view(set.zoom.limits = c(6,8)) +
+  tm_layout(main.title = "p-value of local Moran's I of No of crimes",
+            main.title.size = 0.8)
+
+map2 <- tm_shape(lisa) +
+  tm_polygons() +
+  tm_text("u_rate", size = 0.4, col = "black") +
+  tm_layout(main.title = "unemployment rate",
+            main.title.size = 0.8)
+
+tmap_arrange(map1, map2, ncol = 1)
+```
+
+Having the text itself seems to be a better choice as its clear as to what is the actual value. But having this arrangement of top and bottom doesn't seem to be best. Ultimately it might be the first plot with some adjustment of the text that seems to be the best
+
+#### LISA Map
+
+```{r}
+lisa <- wm_q_filtered
+lisa_sig <- lisa %>% filter(p_ii_sim < 0.05)
+tm_shape(lisa) +
+  tm_polygons() + 
+  tm_borders(alpha = 0.5) + 
+  tm_shape(lisa_sig) + 
+  tm_fill("mean", title = "LISA class") +
+  tm_text("u_rate", size = 0.5, col = "black") +
+  tm_borders(alpha = 0.4) +
+  tm_layout(main.title = "LISA map of crimes", main.title.size = 1)
+```
+
+### Filtering for Emerging Hot Spot Analysis
+
+For this we would only be able to filter
+
+-   **Category:** For this there would only be two options, selecting only either one
+
+-   **Type:** User would only be able to select one based on the category they have chosen
+
+Example of what the filter would look like
+
+```{r}
+category_to_select <- c(
+  "property"
+)
+type_to_select <- c(
+  "break_in"
+)
+```
+
+We then repeat the steps like we did previously
+
+```{r}
+msia_df <- msia %>% filter(category %in% category_to_select, type %in% type_to_select )
+msia_df <- msia_df %>%
+  select(year, crimes, ADM2_EN) %>%
+  st_drop_geometry()
+```
+
+```{r}
+msia_sf_filtered <- msia_sf %>%
+  semi_join(msia_df, by = "ADM2_EN")
+```
+
+```{r}
+msia_df <- msia_df %>%
+    group_by(year, ADM2_EN) %>%
+    summarise(crimes = mean(crimes, na.rm = TRUE)) %>%
+    ungroup()
+check_duplicates <- msia_df %>%
+    group_by(year, ADM2_EN) %>%
+    filter(n() > 1)
+```
+
+```{r}
+msia_spt <- spacetime(msia_df, msia_sf_filtered,
+                 .loc_col = "ADM2_EN",
+                 .time_col = "year")
+```
+
+```{r}
+is_spacetime_cube(msia_spt)
+```
+
+```{r}
+ehsa <- emerging_hotspot_analysis(
+  x = msia_spt, 
+  .var = "crimes", 
+  k = 1, 
+  nsim = 99
+)
+```
+
+```{r}
+ehsa_sf <- left_join(msia_sf, ehsa, by = c("ADM2_EN" = "location"))
+```
+
+```{r}
+EHSA_sig <- ehsa_sf %>%
+  filter(p_value < 0.15) 
+```
+
+```{r}
+tm_shape(ehsa_sf) +
+  tm_polygons() +
+  tm_borders(alpha = 0.5) +
+  tm_shape(EHSA_sig) +
+  tm_fill(col = "classification", title = "Classification") + 
+  tm_borders(alpha = 0.4) +
+  tm_layout(main.title = "EHSA (>85%)", main.title.size = 1)
+```
