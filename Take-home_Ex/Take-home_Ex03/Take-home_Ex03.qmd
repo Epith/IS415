@@ -130,11 +130,19 @@ Something that our side panel that could look like given the variables that we a
 
 ![](images/clipboard-1116187746.png)
 
+![](images/clipboard-123672809.png)
+
+Another possibility is to have the filters in a card look for the different sections of the plot e.g. global and local moran would be grouped together in their own card and EHSA would get their own card
+
 ### Main Panel
 
 Given that I am working with LISA maps and that having a comparison between two maps would be helpful for the user to visualise.
 
 ![](images/clipboard-1619717407.png)
+
+Another thing to consider would be is to have a tabset, for if I want to showcase more maps. So that it will be easier for the user to navigate.
+
+![](images/clipboard-1650925226.png)
 
 This would also be roughly how our shiny application would look like with the different layouts
 
@@ -615,7 +623,7 @@ global_moran_perm(wm_q$crimes,
            wm_q$nb,
            wm_q$wt,
            zero.policy = TRUE,
-           nsim = 999,
+           nsim = 99,
            na.action=na.omit)
 ```
 
@@ -632,7 +640,7 @@ Calculating local Moran’s I statistics and append the results to the original 
 ```{r}
 wm_q <- wm_q %>%
           mutate(local_moran = local_moran(
-            crimes, nb, wt, nsim = 999, zero.policy=TRUE),
+            crimes, nb, wt, nsim = 99, zero.policy=TRUE),
                  .before = 1) %>%
           unnest(local_moran)
 ```
@@ -826,6 +834,14 @@ We can then join them together
 ehsa_sf <- left_join(msia_sf, ehsa, by = c("ADM2_EN" = "location"))
 ```
 
+### Visualisation with Bar Graph
+
+```{r}
+ggplot(data = ehsa,
+       aes(y = classification,fill = classification)) +
+  geom_bar(show.legend = FALSE)
+```
+
 ### Visualising Distribution of EHSA (85% Confidence)
 
 ```{r}
@@ -849,13 +865,13 @@ All of the code above works well for getting the basics of **Global and Local Sp
 
 ### Filtering for Global and Local Spatial Correlation
 
-#### Global Spatial 
+#### Global Spatial
 
 As Shiny Application is interactive and user chooses the input, it is essentially applying a filter on the dataset.
 
 For ***msia*** we have
 
--   **ADM2_EN:** we can limit this to all or have the user to be able to select a mixture of districts
+-   **ADM2_EN:** we can limit this to all or have the user to be able to select a mixture of districts, however it would not really make sense, given how spatial correlation is about clustering
 
 -   **category:** there is only assault or property. So the user can select either or, or both
 
@@ -1046,6 +1062,53 @@ tm_shape(lisa) +
   tm_layout(main.title = "LISA map of crimes", main.title.size = 1)
 ```
 
+#### Testing with different figure size
+
+```{r}
+#| fig-height: 8
+#| fig-width: 12
+lisa <- wm_q_filtered
+lisa_sig <- lisa %>% filter(p_ii_sim < 0.05)
+tm_shape(lisa) +
+  tm_polygons() + 
+  tm_borders(alpha = 0.5) + 
+  tm_shape(lisa_sig) + 
+  tm_fill("mean", title = "LISA class") +
+  tm_text("u_rate", size = 0.6, col = "black") +
+  tm_borders(alpha = 0.4) +
+  tm_layout(main.title = "LISA map of crimes", main.title.size = 1)
+```
+
+```{r}
+#| fig-height: 14
+#| fig-width: 15
+lisa <- wm_q_filtered
+lisa_sig <- lisa %>% filter(p_ii_sim < 0.05)
+tm_shape(lisa) +
+  tm_polygons() + 
+  tm_borders(alpha = 0.5) + 
+  tm_shape(lisa_sig) + 
+  tm_fill("mean", title = "LISA class") +
+  tm_text("u_rate", size = 0.8, col = "black") +
+  tm_borders(alpha = 0.4) +
+  tm_layout(main.title = "LISA map of crimes", main.title.size = 1)
+```
+
+#### Testing interactive maps
+
+```{r}
+tmap_mode("view")
+tm_shape(lisa) +
+  tm_fill("p_ii",
+          breaks = c(0, 0.001, 0.01, 0.05, 1),
+          labels = c("< 0.001", "< 0.01", "< 0.05", "Not sig")) + 
+  tm_borders(alpha = 0.5) +
+  tm_text("u_rate", size = 0.6, col = "black") +  # Adding `p_value_2` as a text label
+  tm_layout(main.title = "p-values of Two Variables",
+            main.title.size = 0.8)
+tmap_mode("plot")
+```
+
 ### Filtering for Emerging Hot Spot Analysis
 
 For this we would only be able to filter
@@ -1126,3 +1189,11 @@ tm_shape(ehsa_sf) +
   tm_borders(alpha = 0.4) +
   tm_layout(main.title = "EHSA (>85%)", main.title.size = 1)
 ```
+
+## Proposed Shiny Application
+
+![](images/clipboard-1058957239.png)
+
+![](images/clipboard-223710064.png)
+
+The parameters in this prototype view is based on what was tested in the **Testing for Shiny App** section. More may be added as deemed necessary or removed during development.
