@@ -1190,6 +1190,15 @@ tm_shape(ehsa_sf) +
   tm_layout(main.title = "EHSA (>85%)", main.title.size = 1)
 ```
 
+### Saving files to RDS
+
+For now one of the things that is useful for us to save to rds would be the *msia* object as that requires a lot of pre processing
+
+```{r}
+#| eval: false
+write_rds(msia, "data/rds/msia.rds")
+```
+
 ## Proposed Shiny Application
 
 ![](images/clipboard-1058957239.png)
