@@ -504,11 +504,11 @@ gwr.adaptive
 
 ### **Visualising GWR Output**
 
-The output feature class table includes not only the regression residuals but also fields for observed and predicted yyy values, the condition number (cond), Local R2R^2R2, residuals, and coefficients and standard errors of the explanatory variables:
+The output feature class table includes not only the regression residuals but also fields for observed and predicted yyy values, the condition number (cond), Local R2R\^2R2, residuals, and coefficients and standard errors of the explanatory variables:
 
 -   **Condition Number**: This diagnostic assesses local collinearity. High condition numbers (above 30) may indicate strong local collinearity, leading to unstable results and potentially unreliable outputs.
 
--   **Local** R2R^2R2: Values range from 0.0 to 1.0, reflecting the fit of the local regression model to observed yyy values. Low values indicate poor model performance in specific locations. Mapping Local R2R^2R2 can reveal areas where the model performs well and areas where it does not, possibly indicating missing variables.
+-   **Local** R2R\^2R2: Values range from 0.0 to 1.0, reflecting the fit of the local regression model to observed yyy values. Low values indicate poor model performance in specific locations. Mapping Local R2R\^2R2 can reveal areas where the model performs well and areas where it does not, possibly indicating missing variables.
 
 -   **Predicted Values**: These represent the estimated yyy values calculated by GWR.
 
